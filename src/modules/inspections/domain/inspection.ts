@@ -57,6 +57,11 @@ export function requestInspectionReview(inspection: Inspection): Inspection {
   return { ...inspection, status: "PENDIENTE_REVISION" };
 }
 
+export const inspectionDecisionLabels = {
+  APROBADA: "Aprobada",
+  RECHAZADA: "Rechazada",
+} as const;
+
 export function reviewInspection(
   inspection: Inspection,
   decision: "APROBADA" | "RECHAZADA",
@@ -64,7 +69,8 @@ export function reviewInspection(
   if (inspection.status !== "PENDIENTE_REVISION") {
     throw new InspectionRuleError("Solo una inspección pendiente de revisión puede evaluarse.");
   }
-  return { ...inspection, status: decision };
+  if (decision === "APROBADA") return { ...inspection, status: "APROBADA" };
+  return { ...inspection, status: "CORRECCION_PENDIENTE" };
 }
 
 export function cancelInspection(inspection: Inspection): Inspection {
