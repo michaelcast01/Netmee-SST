@@ -1,14 +1,24 @@
 export const inspectionStatuses = [
-  "DRAFT",
-  "IN_PROGRESS",
-  "PENDING_CORRECTION",
-  "PENDING_REVIEW",
-  "APPROVED",
-  "REJECTED",
-  "CANCELLED",
+  "BORRADOR",
+  "EN_PROGRESO",
+  "CORRECCION_PENDIENTE",
+  "PENDIENTE_REVISION",
+  "APROBADA",
+  "RECHAZADA",
+  "CANCELADA",
 ] as const;
 
 export type InspectionStatus = (typeof inspectionStatuses)[number];
+
+export const inspectionStatusLabels: Record<InspectionStatus, string> = {
+  BORRADOR: "Borrador",
+  EN_PROGRESO: "En progreso",
+  CORRECCION_PENDIENTE: "Corrección pendiente",
+  PENDIENTE_REVISION: "Pendiente de revisión",
+  APROBADA: "Aprobada",
+  RECHAZADA: "Rechazada",
+  CANCELADA: "Cancelada",
+};
 
 export type InspectionItem = {
   id: string;
@@ -30,7 +40,7 @@ export class InspectionRuleError extends Error {
 }
 
 export function requestInspectionReview(inspection: Inspection): Inspection {
-  if (inspection.status !== "IN_PROGRESS" && inspection.status !== "PENDING_CORRECTION") {
+  if (inspection.status !== "EN_PROGRESO" && inspection.status !== "CORRECCION_PENDIENTE") {
     throw new InspectionRuleError("Solo una inspección activa puede enviarse a revisión.");
   }
 
@@ -44,22 +54,22 @@ export function requestInspectionReview(inspection: Inspection): Inspection {
     );
   }
 
-  return { ...inspection, status: "PENDING_REVIEW" };
+  return { ...inspection, status: "PENDIENTE_REVISION" };
 }
 
 export function reviewInspection(
   inspection: Inspection,
-  decision: "APPROVED" | "REJECTED",
+  decision: "APROBADA" | "RECHAZADA",
 ): Inspection {
-  if (inspection.status !== "PENDING_REVIEW") {
+  if (inspection.status !== "PENDIENTE_REVISION") {
     throw new InspectionRuleError("Solo una inspección pendiente de revisión puede evaluarse.");
   }
   return { ...inspection, status: decision };
 }
 
 export function cancelInspection(inspection: Inspection): Inspection {
-  if (["APPROVED", "REJECTED", "CANCELLED"].includes(inspection.status)) {
+  if (["APROBADA", "RECHAZADA", "CANCELADA"].includes(inspection.status)) {
     throw new InspectionRuleError("La inspección ya se encuentra en un estado final.");
   }
-  return { ...inspection, status: "CANCELLED" };
+  return { ...inspection, status: "CANCELADA" };
 }

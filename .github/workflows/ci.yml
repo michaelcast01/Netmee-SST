@@ -12,6 +12,8 @@ jobs:
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      HAS_E2E_DATABASE_URL: ${{ secrets.E2E_DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,3 +23,12 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run build
+      - run: npx playwright install --with-deps chromium
+        if: ${{ env.HAS_E2E_DATABASE_URL != '' }}
+      - run: npm run test:e2e
+        if: ${{ env.HAS_E2E_DATABASE_URL != '' }}
+        env:
+          DATABASE_URL: ${{ secrets.E2E_DATABASE_URL }}
+          BETTER_AUTH_SECRET: ${{ secrets.E2E_BETTER_AUTH_SECRET }}
+          SEED_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+          SEED_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}

@@ -1,0 +1,3 @@
+import "dotenv/config";
+import { defineConfig, devices } from "@playwright/test";
+export default defineConfig({testDir:"./e2e",fullyParallel:false,workers:1,timeout:60000,retries:process.env.CI?2:0,reporter:[["list"],["html",{open:"never"}]],use:{baseURL:"http://localhost:3100",trace:"retain-on-failure",screenshot:"only-on-failure"},projects:[{name:"chromium",use:{...devices["Desktop Chrome"],channel:process.env.CI?undefined:"chrome"}}],webServer:{command:"npm run dev -- --port 3100",url:"http://localhost:3100/login",reuseExistingServer:true,timeout:120000,env:{...process.env,BETTER_AUTH_URL:"http://localhost:3100",E2E_STORAGE_MEMORY:"true"}}});

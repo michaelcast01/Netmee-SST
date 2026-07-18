@@ -1,0 +1,6 @@
+import { timingSafeEqual } from "node:crypto";
+import { getPrisma } from "@/lib/db/prisma";
+import { deleteEvidenceObject } from "@/lib/storage/s3";
+export const dynamic="force-dynamic";
+function authorized(request:Request){const expected=process.env.RETENTION_WORKER_SECRET;const supplied=request.headers.get("authorization")?.replace(/^Bearer\s+/i,"")??"";if(!expected||expected.length!==supplied.length)return false;return timingSafeEqual(Buffer.from(expected),Buffer.from(supplied));}
+export async function POST(request:Request){if(!authorized(request))return Response.json({error:"No autorizado"},{status:401});const db=getPrisma();const expired=await db.evidence.findMany({where:{legalHold:false,retentionUntil:{lt:new Date()}},orderBy:{retentionUntil:"asc"},take:100,select:{id:true,storagePath:true,inspectionId:true}});let deleted=0;const failures:string[]=[];for(const evidence of expired){try{await deleteEvidenceObject(evidence.storagePath);await db.$transaction([db.evidence.delete({where:{id:evidence.id}}),db.auditLog.create({data:{action:"evidence.retention.deleted",entityType:"evidence",entityId:evidence.id,metadata:{inspectionId:evidence.inspectionId}}})]);deleted++;}catch{failures.push(evidence.id)}}return Response.json({scanned:expired.length,deleted,failures});}

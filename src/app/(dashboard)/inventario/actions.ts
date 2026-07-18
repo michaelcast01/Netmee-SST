@@ -31,7 +31,7 @@ export async function assignPpeItemAction(formData: FormData) {
   const input = assignmentSchema.parse({ ppeItemId: formData.get("ppeItemId"), workerId: formData.get("workerId"), notes: formData.get("notes") || undefined });
   const prisma = getPrisma();
   await prisma.$transaction(async (tx) => {
-    const changed = await tx.ppeItem.updateMany({ where: { id: input.ppeItemId, status: "AVAILABLE", OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] }, data: { status: "ASSIGNED" } });
+    const changed = await tx.ppeItem.updateMany({ where: { id: input.ppeItemId, status: "DISPONIBLE", OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] }, data: { status: "ASIGNADO" } });
     if (changed.count !== 1) throw new Error("El elemento no está disponible o se encuentra vencido.");
     await tx.user.findFirstOrThrow({ where: { id: input.workerId, active: true } });
     await tx.ppeAssignment.create({ data: { ppeItemId: input.ppeItemId, workerId: input.workerId, notes: input.notes || null } });
@@ -49,7 +49,7 @@ export async function returnPpeItemAction(formData: FormData) {
     const assignment = await tx.ppeAssignment.findUniqueOrThrow({ where: { id: assignmentId } });
     const changed = await tx.ppeAssignment.updateMany({ where: { id: assignmentId, status: "ACTIVE" }, data: { status: "RETURNED", returnedAt: new Date() } });
     if (changed.count !== 1) throw new Error("La asignación ya se encontraba cerrada.");
-    await tx.ppeItem.update({ where: { id: assignment.ppeItemId }, data: { status: "AVAILABLE" } });
+    await tx.ppeItem.update({ where: { id: assignment.ppeItemId }, data: { status: "DISPONIBLE" } });
     await tx.ppeMovement.create({ data: { ppeItemId: assignment.ppeItemId, actorId: actor.id, type: "RETURN", metadata: { workerId: assignment.workerId } } });
     await tx.auditLog.create({ data: { actorId: actor.id, action: "inventory.item.returned", entityType: "ppe_item", entityId: assignment.ppeItemId } });
   });

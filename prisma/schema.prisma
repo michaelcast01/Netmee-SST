@@ -16,23 +16,23 @@ enum RoleCode {
 }
 
 enum InspectionStatus {
-  DRAFT
-  IN_PROGRESS
-  PENDING_CORRECTION
-  PENDING_REVIEW
-  APPROVED
-  REJECTED
-  CANCELLED
+  BORRADOR
+  EN_PROGRESO
+  CORRECCION_PENDIENTE
+  PENDIENTE_REVISION
+  APROBADA
+  RECHAZADA
+  CANCELADA
 }
 
 enum PpeItemStatus {
-  AVAILABLE
-  ASSIGNED
-  MAINTENANCE
-  DAMAGED
-  EXPIRED
-  LOST
-  RETIRED
+  DISPONIBLE
+  ASIGNADO
+  MANTENIMIENTO
+  DANADO
+  VENCIDO
+  PERDIDO
+  RETIRADO
 }
 
 enum PpeAssignmentStatus {
@@ -92,6 +92,18 @@ enum AiJobStatus {
   FAILED
 }
 
+enum NotificationType {
+  PPE_EXPIRING
+  INSPECTION_PENDING
+  CORRECTIVE_ACTION_OVERDUE
+  CRITICAL_FINDING
+}
+
+enum ApprovalDecision {
+  APROBADA
+  RECHAZADA
+}
+
 model User {
   id              String           @id
   email           String           @unique
@@ -113,6 +125,8 @@ model User {
   verifiedCorrectiveActions CorrectiveAction[] @relation("CorrectiveActionVerifier")
   aiValidations AiValidation[]
   evidenceUploads Evidence[]       @relation("EvidenceUploader")
+  notifications   Notification[]
+  inspectionApprovals InspectionApproval[]
   createdAt       DateTime         @default(now()) @map("created_at")
   updatedAt       DateTime         @updatedAt @map("updated_at")
 
@@ -273,7 +287,7 @@ model PpeItem {
   serialNumber String?       @unique @map("serial_number")
   qrCode       String        @unique @map("qr_code")
   ppeTypeId    String        @map("ppe_type_id")
-  status       PpeItemStatus @default(AVAILABLE)
+  status       PpeItemStatus @default(DISPONIBLE)
   size         String?
   expiresAt    DateTime?     @map("expires_at")
   ppeType      PpeType       @relation(fields: [ppeTypeId], references: [id])
@@ -322,7 +336,7 @@ model Inspection {
   code        String           @unique
   workerId    String           @map("worker_id")
   activityId  String           @map("activity_id")
-  status      InspectionStatus @default(DRAFT)
+  status      InspectionStatus @default(BORRADOR)
   scheduledAt DateTime?        @map("scheduled_at")
   completedAt DateTime?        @map("completed_at")
   reviewedAt  DateTime?        @map("reviewed_at")
@@ -335,6 +349,7 @@ model Inspection {
   evidence    Evidence[]
   history     InspectionStatusHistory[]
   incidents   Incident[]
+  approvals   InspectionApproval[]
   createdAt   DateTime         @default(now()) @map("created_at")
   updatedAt   DateTime         @updatedAt @map("updated_at")
 
@@ -424,6 +439,7 @@ model Evidence {
   checksum       String
   uploadedById   String       @map("uploaded_by")
   retentionUntil DateTime?    @map("retention_until")
+  legalHold      Boolean      @default(false) @map("legal_hold")
   inspection     Inspection   @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
   uploadedBy     User         @relation("EvidenceUploader", fields: [uploadedById], references: [id])
   analyses       AiAnalysis[]
@@ -431,6 +447,40 @@ model Evidence {
 
   @@index([inspectionId, createdAt])
   @@map("evidence")
+}
+
+model InspectionApproval {
+  id           String           @id @default(cuid())
+  inspectionId String           @map("inspection_id")
+  reviewerId   String           @map("reviewer_id")
+  decision     ApprovalDecision
+  signerName   String           @map("signer_name")
+  reason       String
+  signatureHash String          @map("signature_hash")
+  signedAt     DateTime         @default(now()) @map("signed_at")
+  inspection   Inspection       @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  reviewer     User             @relation(fields: [reviewerId], references: [id])
+
+  @@index([inspectionId, signedAt])
+  @@map("inspection_approvals")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String           @map("user_id")
+  type      NotificationType
+  title     String
+  message   String
+  href      String
+  dedupeKey String           @map("dedupe_key")
+  readAt    DateTime?        @map("read_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, readAt, createdAt])
+  @@map("notifications")
 }
 
 model AiAnalysis {

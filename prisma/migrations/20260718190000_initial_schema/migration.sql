@@ -5,10 +5,10 @@ CREATE SCHEMA IF NOT EXISTS "public";
 CREATE TYPE "RoleCode" AS ENUM ('TECHNICIAN', 'SST_MANAGER', 'OPERATIONS_COORDINATOR', 'SYSTEM_ADMIN', 'MANAGEMENT');
 
 -- CreateEnum
-CREATE TYPE "InspectionStatus" AS ENUM ('DRAFT', 'IN_PROGRESS', 'PENDING_CORRECTION', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'CANCELLED');
+CREATE TYPE "InspectionStatus" AS ENUM ('BORRADOR', 'EN_PROGRESO', 'CORRECCION_PENDIENTE', 'PENDIENTE_REVISION', 'APROBADA', 'RECHAZADA', 'CANCELADA');
 
 -- CreateEnum
-CREATE TYPE "PpeItemStatus" AS ENUM ('AVAILABLE', 'ASSIGNED', 'MAINTENANCE', 'DAMAGED', 'EXPIRED', 'LOST', 'RETIRED');
+CREATE TYPE "PpeItemStatus" AS ENUM ('DISPONIBLE', 'ASIGNADO', 'MANTENIMIENTO', 'DANADO', 'VENCIDO', 'PERDIDO', 'RETIRADO');
 
 -- CreateEnum
 CREATE TYPE "PpeAssignmentStatus" AS ENUM ('ACTIVE', 'RETURNED', 'LOST', 'REPLACED');
@@ -186,7 +186,7 @@ CREATE TABLE "ppe_items" (
     "serial_number" TEXT,
     "qr_code" TEXT NOT NULL,
     "ppe_type_id" TEXT NOT NULL,
-    "status" "PpeItemStatus" NOT NULL DEFAULT 'AVAILABLE',
+    "status" "PpeItemStatus" NOT NULL DEFAULT 'DISPONIBLE',
     "size" TEXT,
     "expires_at" TIMESTAMP(3),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -227,7 +227,7 @@ CREATE TABLE "inspections" (
     "code" TEXT NOT NULL,
     "worker_id" TEXT NOT NULL,
     "activity_id" TEXT NOT NULL,
-    "status" "InspectionStatus" NOT NULL DEFAULT 'DRAFT',
+    "status" "InspectionStatus" NOT NULL DEFAULT 'BORRADOR',
     "scheduled_at" TIMESTAMP(3),
     "completed_at" TIMESTAMP(3),
     "reviewed_at" TIMESTAMP(3),

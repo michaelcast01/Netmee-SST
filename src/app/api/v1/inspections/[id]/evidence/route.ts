@@ -15,7 +15,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const inspection = await getPrisma().inspection.findUnique({ where: { id: inspectionId }, select: { workerId: true, status: true } });
   if (!inspection) return Response.json({ error: "Inspección no encontrada" }, { status: 404 });
   if (inspection.workerId !== user.id && !hasPermission(user.permissions, "inspection.review")) return Response.json({ error: "Sin permiso" }, { status: 403 });
-  if (["APPROVED", "REJECTED", "CANCELLED"].includes(inspection.status)) return Response.json({ error: "La inspección ya está cerrada" }, { status: 409 });
+  if (["APROBADA", "RECHAZADA", "CANCELADA"].includes(inspection.status)) return Response.json({ error: "La inspección ya está cerrada" }, { status: 409 });
 
   const form = await request.formData();
   const file = form.get("file");
