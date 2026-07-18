@@ -19,7 +19,7 @@ export function Pagination({ page, pageSize, total, pathname, params }: Paginati
   const pages = Math.max(1, Math.ceil(total / pageSize));
   if (pages <= 1) return null;
   return (
-    <nav aria-label="Paginación" className="flex items-center justify-between border-t border-[var(--line)] px-5 py-4 text-sm">
+    <nav aria-label="Paginación" className="flex flex-col gap-3 border-t border-[var(--line)] px-4 py-4 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-5">
       <p className="text-[var(--muted)]">Página {page} de {pages} · {total} registros</p>
       <div className="flex gap-2">
         {page > 1 ? <Link className="rounded-lg border border-[var(--line)] px-3 py-2 font-semibold" href={hrefFor(pathname, params, page - 1)}>Anterior</Link> : null}

@@ -5,11 +5,15 @@ import { betterAuth } from "better-auth/minimal";
 
 import { getPrisma } from "@/lib/db/prisma";
 import { sendPasswordResetEmail } from "@/lib/email/resend";
+import { resolveAuthOrigins } from "@/lib/auth/origins";
 
 function createAuth() {
+  const { baseURL, trustedOrigins } = resolveAuthOrigins();
+
   return betterAuth({
     appName: "NETMEE EPP Seguro",
-    baseURL: process.env.BETTER_AUTH_URL,
+    baseURL,
+    trustedOrigins,
     secret: process.env.BETTER_AUTH_SECRET,
     database: prismaAdapter(getPrisma(), { provider: "postgresql" }),
     emailAndPassword: {
