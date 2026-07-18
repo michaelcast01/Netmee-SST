@@ -21,7 +21,7 @@ export default async function UsersPage() {
     },
   });
   return (
-    <main className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
+    <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <p className="text-sm font-semibold text-[var(--brand)]">
         ADMINISTRACIÓN
       </p>
@@ -29,7 +29,65 @@ export default async function UsersPage() {
       <p className="mt-2 text-sm text-[var(--muted)]">
         Los cambios quedan registrados en auditoría.
       </p>
-      <div className="mt-7 overflow-hidden rounded-2xl border border-[var(--line)] bg-white shadow-sm">
+      <div className="mt-6 space-y-3 md:hidden">
+        {users.map((user) => (
+          <article
+            className="rounded-2xl border border-[var(--line)] bg-white p-4 shadow-sm"
+            key={user.id}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="font-semibold">{user.name}</h2>
+                <p className="mt-1 break-all text-xs text-[var(--muted)]">
+                  {user.email}
+                </p>
+              </div>
+              <span
+                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${user.active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}
+              >
+                {user.active ? "Activo" : "Inactivo"}
+              </span>
+            </div>
+            <div className="mt-4 rounded-xl bg-slate-50 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                Roles actuales
+              </p>
+              <p className="mt-1 text-sm">
+                {user.roles
+                  .map(({ role }) => displayLabel(role.code))
+                  .join(", ") || "Sin rol"}
+              </p>
+            </div>
+            <form action={assignRoleAction} className="mt-4 grid gap-2">
+              <input name="userId" type="hidden" value={user.id} />
+              <label
+                className="text-xs font-semibold text-[var(--muted)]"
+                htmlFor={`role-${user.id}`}
+              >
+                Asignar un rol
+              </label>
+              <select
+                className="w-full rounded-lg border border-[var(--line)] bg-white px-3 py-3 text-sm"
+                id={`role-${user.id}`}
+                name="roleCode"
+              >
+                {roles.map((role) => (
+                  <option key={role} value={role}>
+                    {displayLabel(role)}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="rounded-lg bg-[var(--brand)] px-4 py-3 text-sm font-semibold text-white"
+                type="submit"
+              >
+                Asignar rol
+              </button>
+            </form>
+          </article>
+        ))}
+      </div>
+      <div className="mt-7 hidden overflow-hidden rounded-2xl border border-[var(--line)] bg-white shadow-sm md:block">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-[var(--line)] bg-slate-50 text-xs uppercase text-[var(--muted)]">
@@ -49,8 +107,9 @@ export default async function UsersPage() {
                     </p>
                   </td>
                   <td className="px-5 py-4 text-xs">
-                    {user.roles.map(({ role }) => displayLabel(role.code)).join(", ") ||
-                      "Sin rol"}
+                    {user.roles
+                      .map(({ role }) => displayLabel(role.code))
+                      .join(", ") || "Sin rol"}
                   </td>
                   <td className="px-5 py-4">
                     <form

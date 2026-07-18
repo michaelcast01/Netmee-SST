@@ -1,5 +1,9 @@
 const labels: Record<string, string> = {
   SYSTEM_ADMIN: "Administrador del sistema",
+  TECHNICIAN: "Técnico",
+  SST_MANAGER: "Responsable SST",
+  OPERATIONS_COORDINATOR: "Coordinador de operaciones",
+  MANAGEMENT: "Gerencia",
   SUPERVISOR: "Supervisor",
   INSPECTOR: "Inspector",
   AUDITOR: "Auditor",
@@ -27,10 +31,17 @@ const labels: Record<string, string> = {
 };
 
 export function displayLabel(value: string) {
-  return labels[value] ?? value.replaceAll("_", " ").toLocaleLowerCase("es-CO").replace(/^./, (letter) => letter.toLocaleUpperCase("es-CO"));
+  return (
+    labels[value] ??
+    value
+      .replaceAll("_", " ")
+      .toLocaleLowerCase("es-CO")
+      .replace(/^./, (letter) => letter.toLocaleUpperCase("es-CO"))
+  );
 }
 
 const auditLabels: Record<string, string> = {
+  "admin.password.changed": "Contraseña del administrador actualizada",
   "inspection.review.requested": "Revisión de inspección solicitada",
   "inspection.approved": "Inspección aprobada",
   "inspection.rejected": "Inspección rechazada",

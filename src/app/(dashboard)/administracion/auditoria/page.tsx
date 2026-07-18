@@ -48,7 +48,7 @@ export default async function AuditPage({
   });
   const names = new Map(actors.map((a) => [a.id, a.name]));
   return (
-    <main className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
+    <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <p className="text-sm font-semibold text-[var(--brand)]">TRAZABILIDAD</p>
       <h1 className="mt-2 text-3xl font-semibold">Auditoría</h1>
       <p className="mt-2 text-sm text-[var(--muted)]">
@@ -76,7 +76,35 @@ export default async function AuditPage({
         </button>
       </form>
       <div className="mt-5 overflow-hidden rounded-2xl border border-[var(--line)] bg-white shadow-sm">
-        <div className="overflow-x-auto">
+        <div className="divide-y divide-[var(--line)] md:hidden">
+          {logs.map((log) => (
+            <article className="p-4" key={log.id}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-semibold">
+                  {log.actorId
+                    ? (names.get(log.actorId) ?? "Usuario eliminado")
+                    : "Sistema"}
+                </p>
+                <time
+                  className="text-xs text-[var(--muted)]"
+                  dateTime={log.createdAt.toISOString()}
+                >
+                  {log.createdAt.toLocaleString("es-CO")}
+                </time>
+              </div>
+              <p className="mt-3 text-sm">{auditLabel(log.action)}</p>
+              <p className="mt-2 break-all rounded-lg bg-slate-50 px-3 py-2 font-mono text-xs text-[var(--muted)]">
+                {auditLabel(log.entityType)}: {log.entityId}
+              </p>
+            </article>
+          ))}
+          {!logs.length ? (
+            <p className="p-8 text-center text-sm text-[var(--muted)]">
+              No hay resultados.
+            </p>
+          ) : null}
+        </div>
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-[var(--line)] bg-slate-50 text-xs uppercase text-[var(--muted)]">
               <tr>
