@@ -1,6 +1,6 @@
 "use server";
 
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -13,7 +13,8 @@ import { requestInspectionReview, reviewInspection } from "@/modules/inspections
 const idSchema = z.string().min(1).max(64);
 const createSchema = z.object({ activityId: idSchema, scheduledAt: z.string().optional() });
 const itemSchema = z.object({ inspectionId: idSchema, itemId: idSchema, compliant: z.enum(["true", "false"]), observation: z.string().trim().max(500).optional() });
-const reviewSchema = z.object({ inspectionId: idSchema, decision: z.enum(["APPROVED", "REJECTED"]), reason: z.string().trim().min(3).max(500) });
+const reviewSchema = z.object({ inspectionId: idSchema, decision: z.enum(["APROBADA", "RECHAZADA"]), reason: z.string().trim().min(3).max(500), signerName: z.string().trim().min(3).max(120) });
+const retentionSchema = z.object({ inspectionId:idSchema,evidenceId:idSchema,legalHold:z.enum(["true","false"]) });
 
 function inspectionCode() {
   return `INS-${new Date().getFullYear()}-${randomBytes(4).toString("hex").toUpperCase()}`;
@@ -32,9 +33,9 @@ export async function createInspectionAction(formData: FormData) {
         workerId: actor.id,
         activityId: activity.id,
         scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : null,
-        status: "DRAFT",
+        status: "BORRADOR",
         items: { create: activity.ppeRequirements.map((requirement) => ({ ppeTypeId: requirement.ppeTypeId, required: requirement.required })) },
-        history: { create: { toStatus: "DRAFT", changedById: actor.id, reason: "Inspección creada" } },
+        history: { create: { toStatus: "BORRADOR", changedById: actor.id, reason: "Inspección creada" } },
       },
     });
   });
@@ -48,11 +49,11 @@ export async function updateInspectionItemAction(formData: FormData) {
   await prisma.$transaction(async (tx) => {
     const inspection = await tx.inspection.findUniqueOrThrow({ where: { id: input.inspectionId }, select: { workerId: true, status: true } });
     if (inspection.workerId !== actor.id) throw new Error("No puedes modificar una inspección de otro trabajador.");
-    if (!["DRAFT", "IN_PROGRESS", "PENDING_CORRECTION"].includes(inspection.status)) throw new Error("La inspección ya no admite cambios.");
+    if (!["BORRADOR", "EN_PROGRESO", "CORRECCION_PENDIENTE"].includes(inspection.status)) throw new Error("La inspección ya no admite cambios.");
     await tx.inspectionItem.update({ where: { id: input.itemId, inspectionId: input.inspectionId }, data: { compliant: input.compliant === "true", observation: input.observation || null } });
-    if (inspection.status === "DRAFT") {
-      await tx.inspection.update({ where: { id: input.inspectionId }, data: { status: "IN_PROGRESS" } });
-      await tx.inspectionStatusHistory.create({ data: { inspectionId: input.inspectionId, fromStatus: "DRAFT", toStatus: "IN_PROGRESS", changedById: actor.id, reason: "Verificación iniciada" } });
+    if (inspection.status === "BORRADOR") {
+      await tx.inspection.update({ where: { id: input.inspectionId }, data: { status: "EN_PROGRESO" } });
+      await tx.inspectionStatusHistory.create({ data: { inspectionId: input.inspectionId, fromStatus: "BORRADOR", toStatus: "EN_PROGRESO", changedById: actor.id, reason: "Verificación iniciada" } });
     }
   });
   revalidatePath(`/inspecciones/${input.inspectionId}`);
@@ -77,15 +78,18 @@ export async function submitInspectionForReviewAction(formData: FormData) {
 
 export async function reviewInspectionAction(formData: FormData) {
   const actor = await requirePermission("inspection.review");
-  const input = reviewSchema.parse({ inspectionId: formData.get("inspectionId"), decision: formData.get("decision"), reason: formData.get("reason") });
+  const input = reviewSchema.parse({ inspectionId: formData.get("inspectionId"), decision: formData.get("decision"), reason: formData.get("reason"), signerName: formData.get("signerName") });
   const prisma = getPrisma();
   const inspection = await prisma.inspection.findUniqueOrThrow({ where: { id: input.inspectionId }, include: { items: true } });
   const updated = reviewInspection({ id: inspection.id, status: inspection.status, items: inspection.items.map((item) => ({ id: item.id, required: item.required, compliant: item.compliant })) }, input.decision);
+  const signedAt = new Date();
+  const signatureHash = createHash("sha256").update([input.inspectionId, actor.id, input.decision, input.signerName, input.reason, signedAt.toISOString()].join("|")).digest("hex");
   await prisma.$transaction(async (tx) => {
-    const changed = await tx.inspection.updateMany({ where: { id: input.inspectionId, status: "PENDING_REVIEW" }, data: { status: updated.status, reviewedById: actor.id, reviewedAt: new Date(), completedAt: new Date() } });
+    const changed = await tx.inspection.updateMany({ where: { id: input.inspectionId, status: "PENDIENTE_REVISION" }, data: { status: updated.status, reviewedById: actor.id, reviewedAt: new Date(), completedAt: new Date() } });
     if (changed.count !== 1) throw new Error("La inspección ya fue revisada.");
-    await tx.inspectionStatusHistory.create({ data: { inspectionId: input.inspectionId, fromStatus: "PENDING_REVIEW", toStatus: updated.status, changedById: actor.id, reason: input.reason } });
-    await tx.auditLog.create({ data: { actorId: actor.id, action: `inspection.${input.decision.toLowerCase()}`, entityType: "inspection", entityId: input.inspectionId, metadata: { reason: input.reason } } });
+    await tx.inspectionStatusHistory.create({ data: { inspectionId: input.inspectionId, fromStatus: "PENDIENTE_REVISION", toStatus: updated.status, changedById: actor.id, reason: input.reason } });
+    await tx.inspectionApproval.create({ data: { inspectionId: input.inspectionId, reviewerId: actor.id, decision: input.decision, signerName: input.signerName, reason: input.reason, signatureHash, signedAt } });
+    await tx.auditLog.create({ data: { actorId: actor.id, action: `inspection.${input.decision.toLowerCase()}`, entityType: "inspection", entityId: input.inspectionId, metadata: { reason: input.reason, signatureHash } } });
   });
   revalidatePath(`/inspecciones/${input.inspectionId}`);
   revalidatePath("/inspecciones");
@@ -94,4 +98,14 @@ export async function reviewInspectionAction(formData: FormData) {
 export async function canViewInspection(workerId: string) {
   const user = await getCurrentUser();
   return Boolean(user && (user.id === workerId || hasPermission(user.permissions, "inspection.review")));
+}
+
+export async function setEvidenceLegalHoldAction(formData:FormData){
+  const actor=await requirePermission("inspection.review");
+  const input=retentionSchema.parse({inspectionId:formData.get("inspectionId"),evidenceId:formData.get("evidenceId"),legalHold:formData.get("legalHold")});
+  const db=getPrisma();
+  const changed=await db.evidence.updateMany({where:{id:input.evidenceId,inspectionId:input.inspectionId},data:{legalHold:input.legalHold==="true"}});
+  if(changed.count!==1)throw new Error("Evidencia no encontrada.");
+  await db.auditLog.create({data:{actorId:actor.id,action:input.legalHold==="true"?"evidence.legal_hold.enabled":"evidence.legal_hold.disabled",entityType:"evidence",entityId:input.evidenceId,metadata:{inspectionId:input.inspectionId}}});
+  revalidatePath(`/inspecciones/${input.inspectionId}`);
 }

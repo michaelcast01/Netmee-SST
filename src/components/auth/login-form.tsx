@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { authClient } from "@/lib/auth/client";
 
 export function LoginForm() {
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -28,7 +30,7 @@ export function LoginForm() {
   }
 
   return (
-    <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+    <form className="mt-8 space-y-5" method="post" onSubmit={handleSubmit}>
       <div>
         <label className="text-sm font-medium" htmlFor="email">Correo corporativo</label>
         <input autoComplete="email" className="auth-input" id="email" name="email" placeholder="nombre@netmee.com" required type="email" />
@@ -41,7 +43,7 @@ export function LoginForm() {
         <input autoComplete="current-password" className="auth-input" id="password" minLength={12} name="password" required type="password" />
       </div>
       {error ? <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p> : null}
-      <button className="auth-button" disabled={pending} type="submit">{pending ? "Verificando…" : "Iniciar sesión"}</button>
+      <button className="auth-button" disabled={pending || !hydrated} type="submit">{pending ? "Verificando…" : hydrated ? "Iniciar sesión" : "Preparando acceso…"}</button>
     </form>
   );
 }

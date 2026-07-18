@@ -10,13 +10,14 @@ export function EvidenceUploader({ inspectionId }: { inspectionId: string }) {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formElement = event.currentTarget;
     setPending(true);
     setMessage("");
-    const response = await fetch(`/api/v1/inspections/${inspectionId}/evidence`, { method: "POST", body: new FormData(event.currentTarget) });
+    const response = await fetch(`/api/v1/inspections/${inspectionId}/evidence`, { method: "POST", body: new FormData(formElement) });
     const result = (await response.json()) as { error?: string };
     setPending(false);
     if (!response.ok) return setMessage(result.error ?? "No se pudo cargar la evidencia.");
-    event.currentTarget.reset();
+    formElement.reset();
     setMessage("Evidencia cargada correctamente.");
     router.refresh();
   }
