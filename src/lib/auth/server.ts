@@ -27,17 +27,17 @@ function createAuth() {
       updateAge: 60 * 60,
       freshAge: 15 * 60,
     },
-    rateLimit: {
-      enabled: true,
-      storage: "database",
-      window: 60,
-      max: 100,
-      customRules: {
-        "/sign-in/email": { window: 60, max: 5 },
-        "/request-password-reset": { window: 300, max: 3 },
-        "/reset-password": { window: 300, max: 5 },
-      },
-    },
+    // rateLimit: {
+    //   enabled: true,
+    //   storage: "database",
+    //   window: 60,
+    //   max: 100,
+    //   customRules: {
+    //     "/sign-in/email": { window: 60, max: 5 },
+    //     "/request-password-reset": { window: 300, max: 3 },
+    //     "/reset-password": { window: 300, max: 5 },
+    //   },
+    // },
   });
 }
 
