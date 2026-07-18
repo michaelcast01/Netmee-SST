@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f4f6fa;
+  --foreground: #172036;
+  --surface: #f4f6fa;
+  --text: #172036;
+  --muted: #657089;
+  --line: #e2e7f0;
+  --navy: #111a2f;
+  --brand: #6547c7;
+  --brand-strong: #5032ae;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--background); color: var(--foreground); font-family: "Geist", "Geist Fallback", Arial, sans-serif; }
+a { outline-offset: 4px; }
+
+.status-dot { width: 0.65rem; height: 0.65rem; flex: none; border-radius: 999px; box-shadow: 0 0 0 5px currentColor; }
+.status-warning { color: #f3b63f; background: #f3b63f; box-shadow: 0 0 0 5px #fff5db; }
+.status-success { color: #2e9c6b; background: #2e9c6b; box-shadow: 0 0 0 5px #e3f6ed; }
+.status-danger { color: #d95865; background: #d95865; box-shadow: 0 0 0 5px #fdebed; }
+.module-state { flex: none; border-radius: 999px; padding: 0.25rem 0.5rem; font-size: 0.65rem; font-weight: 700; }
+.state-ready { background: #e9f8f0; color: #237451; }
+.state-planned { background: #f0f2f6; color: #657089; }
+
+.auth-input { margin-top: 0.5rem; width: 100%; border-radius: 0.75rem; border: 1px solid var(--line); background: white; padding: 0.8rem 0.9rem; color: var(--text); outline: none; transition: border-color 150ms, box-shadow 150ms; }
+.auth-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgb(101 71 199 / 12%); }
+.auth-button { width: 100%; border-radius: 0.75rem; background: var(--brand); padding: 0.85rem 1rem; color: white; font-size: 0.875rem; font-weight: 700; transition: background 150ms, opacity 150ms; }
+.auth-button:hover { background: var(--brand-strong); }
+.auth-button:disabled { cursor: wait; opacity: 0.65; }

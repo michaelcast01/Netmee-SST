@@ -1,0 +1,497 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RoleCode {
+  TECHNICIAN
+  SST_MANAGER
+  OPERATIONS_COORDINATOR
+  SYSTEM_ADMIN
+  MANAGEMENT
+}
+
+enum InspectionStatus {
+  DRAFT
+  IN_PROGRESS
+  PENDING_CORRECTION
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum PpeItemStatus {
+  AVAILABLE
+  ASSIGNED
+  MAINTENANCE
+  DAMAGED
+  EXPIRED
+  LOST
+  RETIRED
+}
+
+enum PpeAssignmentStatus {
+  ACTIVE
+  RETURNED
+  LOST
+  REPLACED
+}
+
+enum PpeMovementType {
+  PURCHASE
+  DELIVERY
+  RETURN
+  REPLACEMENT
+  DAMAGE
+  LOSS
+  RETIREMENT
+}
+
+enum AiAnalysisStatus {
+  PENDING
+  PROCESSING
+  DETECTED
+  NOT_DETECTED
+  LOW_CONFIDENCE
+  CONFIRMED
+  DISCARDED
+  ERROR
+}
+
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IncidentStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum CorrectiveActionStatus {
+  OPEN
+  IN_PROGRESS
+  PENDING_VERIFICATION
+  COMPLETED
+  CANCELLED
+}
+
+enum AiJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id              String           @id
+  email           String           @unique
+  name            String
+  emailVerified   Boolean          @default(false) @map("email_verified")
+  image            String?
+  active          Boolean          @default(true)
+  roles           UserRole[]
+  sessions        Session[]
+  accounts        Account[]
+  inspections     Inspection[]     @relation("WorkerInspections")
+  reviewedInspections Inspection[] @relation("ReviewedInspections")
+  inspectionChanges InspectionStatusHistory[]
+  ppeAssignments  PpeAssignment[] @relation("AssignedPpe")
+  ppeMovements    PpeMovement[]   @relation("PpeMovementActor")
+  reportedIncidents Incident[] @relation("IncidentReporter")
+  assignedIncidents Incident[] @relation("IncidentResponsible")
+  correctiveActions CorrectiveAction[] @relation("CorrectiveActionResponsible")
+  verifiedCorrectiveActions CorrectiveAction[] @relation("CorrectiveActionVerifier")
+  aiValidations AiValidation[]
+  evidenceUploads Evidence[]       @relation("EvidenceUploader")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime @map("expires_at")
+  token     String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id")
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                  String?
+  password               String?
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([identifier])
+  @@map("verifications")
+}
+
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt @map("last_request")
+
+  @@map("rate_limits")
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  code        RoleCode         @unique
+  name        String
+  users       UserRole[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id    String           @id @default(cuid())
+  code  String           @unique
+  name  String
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model UserRole {
+  userId String @map("user_id")
+  roleId String @map("role_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id")
+  permissionId String     @map("permission_id")
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model Activity {
+  id              String                   @id @default(cuid())
+  name            String                   @unique
+  active          Boolean                  @default(true)
+  hazards         ActivityHazard[]
+  ppeRequirements ActivityPpeRequirement[]
+  inspections     Inspection[]
+  createdAt       DateTime                 @default(now()) @map("created_at")
+  updatedAt       DateTime                 @updatedAt @map("updated_at")
+
+  @@map("activities")
+}
+
+model Hazard {
+  id         String           @id @default(cuid())
+  name       String           @unique
+  activities ActivityHazard[]
+
+  @@map("hazards")
+}
+
+model ActivityHazard {
+  activityId String   @map("activity_id")
+  hazardId   String   @map("hazard_id")
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  hazard     Hazard   @relation(fields: [hazardId], references: [id], onDelete: Cascade)
+
+  @@id([activityId, hazardId])
+  @@map("activity_hazards")
+}
+
+model PpeType {
+  id           String                   @id @default(cuid())
+  code         String                   @unique
+  name         String
+  usefulLife   Int?                     @map("useful_life_days")
+  requirements ActivityPpeRequirement[]
+  items        PpeItem[]
+  inspections  InspectionItem[]
+
+  @@map("ppe_types")
+}
+
+model ActivityPpeRequirement {
+  activityId String   @map("activity_id")
+  ppeTypeId  String   @map("ppe_type_id")
+  required   Boolean  @default(true)
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  ppeType    PpeType  @relation(fields: [ppeTypeId], references: [id], onDelete: Cascade)
+
+  @@id([activityId, ppeTypeId])
+  @@map("activity_ppe_requirements")
+}
+
+model PpeItem {
+  id           String        @id @default(cuid())
+  serialNumber String?       @unique @map("serial_number")
+  qrCode       String        @unique @map("qr_code")
+  ppeTypeId    String        @map("ppe_type_id")
+  status       PpeItemStatus @default(AVAILABLE)
+  size         String?
+  expiresAt    DateTime?     @map("expires_at")
+  ppeType      PpeType       @relation(fields: [ppeTypeId], references: [id])
+  assignments  PpeAssignment[]
+  movements    PpeMovement[]
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  @@index([status, expiresAt])
+  @@map("ppe_items")
+}
+
+model PpeAssignment {
+  id         String              @id @default(cuid())
+  ppeItemId  String              @map("ppe_item_id")
+  workerId   String              @map("worker_id")
+  status     PpeAssignmentStatus @default(ACTIVE)
+  deliveredAt DateTime           @default(now()) @map("delivered_at")
+  returnedAt DateTime?           @map("returned_at")
+  notes      String?
+  ppeItem    PpeItem             @relation(fields: [ppeItemId], references: [id])
+  worker     User                @relation("AssignedPpe", fields: [workerId], references: [id])
+
+  @@index([workerId, status])
+  @@index([ppeItemId, status])
+  @@map("ppe_assignments")
+}
+
+model PpeMovement {
+  id          String          @id @default(cuid())
+  ppeItemId   String          @map("ppe_item_id")
+  type        PpeMovementType
+  actorId     String          @map("actor_id")
+  notes       String?
+  metadata    Json?
+  ppeItem     PpeItem         @relation(fields: [ppeItemId], references: [id])
+  actor       User            @relation("PpeMovementActor", fields: [actorId], references: [id])
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  @@index([ppeItemId, createdAt])
+  @@map("ppe_movements")
+}
+
+model Inspection {
+  id          String           @id @default(cuid())
+  code        String           @unique
+  workerId    String           @map("worker_id")
+  activityId  String           @map("activity_id")
+  status      InspectionStatus @default(DRAFT)
+  scheduledAt DateTime?        @map("scheduled_at")
+  completedAt DateTime?        @map("completed_at")
+  reviewedAt  DateTime?        @map("reviewed_at")
+  reviewedById String?         @map("reviewed_by_id")
+  generalObservation String?   @map("general_observation")
+  worker      User             @relation("WorkerInspections", fields: [workerId], references: [id])
+  reviewedBy  User?            @relation("ReviewedInspections", fields: [reviewedById], references: [id])
+  activity    Activity         @relation(fields: [activityId], references: [id])
+  items       InspectionItem[]
+  evidence    Evidence[]
+  history     InspectionStatusHistory[]
+  incidents   Incident[]
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  @@index([workerId, status])
+  @@index([activityId, createdAt])
+  @@map("inspections")
+}
+
+model Incident {
+  id            String           @id @default(cuid())
+  code          String           @unique
+  inspectionId  String?          @map("inspection_id")
+  title         String
+  description   String
+  severity      IncidentSeverity
+  status        IncidentStatus   @default(OPEN)
+  reportedById  String           @map("reported_by_id")
+  responsibleId String?          @map("responsible_id")
+  inspection    Inspection?      @relation(fields: [inspectionId], references: [id])
+  reportedBy    User             @relation("IncidentReporter", fields: [reportedById], references: [id])
+  responsible   User?            @relation("IncidentResponsible", fields: [responsibleId], references: [id])
+  actions       CorrectiveAction[]
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+
+  @@index([status, severity, createdAt])
+  @@map("incidents")
+}
+
+model CorrectiveAction {
+  id            String                 @id @default(cuid())
+  incidentId    String                 @map("incident_id")
+  description   String
+  status        CorrectiveActionStatus @default(OPEN)
+  responsibleId String                 @map("responsible_id")
+  dueAt         DateTime               @map("due_at")
+  completedAt   DateTime?              @map("completed_at")
+  verifiedById  String?                @map("verified_by_id")
+  verifiedAt    DateTime?              @map("verified_at")
+  closureNotes  String?                @map("closure_notes")
+  incident      Incident               @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  responsible   User                   @relation("CorrectiveActionResponsible", fields: [responsibleId], references: [id])
+  verifiedBy    User?                  @relation("CorrectiveActionVerifier", fields: [verifiedById], references: [id])
+  createdAt     DateTime               @default(now()) @map("created_at")
+  updatedAt     DateTime               @updatedAt @map("updated_at")
+
+  @@index([status, dueAt])
+  @@map("corrective_actions")
+}
+
+model InspectionStatusHistory {
+  id           String           @id @default(cuid())
+  inspectionId String           @map("inspection_id")
+  fromStatus   InspectionStatus? @map("from_status")
+  toStatus     InspectionStatus @map("to_status")
+  changedById  String           @map("changed_by_id")
+  reason       String?
+  inspection   Inspection       @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  changedBy    User             @relation(fields: [changedById], references: [id])
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  @@index([inspectionId, createdAt])
+  @@map("inspection_status_history")
+}
+
+model InspectionItem {
+  id           String     @id @default(cuid())
+  inspectionId String     @map("inspection_id")
+  ppeTypeId    String     @map("ppe_type_id")
+  required     Boolean    @default(true)
+  compliant    Boolean?
+  observation  String?
+  inspection   Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  ppeType      PpeType    @relation(fields: [ppeTypeId], references: [id])
+
+  @@unique([inspectionId, ppeTypeId])
+  @@map("inspection_items")
+}
+
+model Evidence {
+  id             String       @id @default(cuid())
+  inspectionId   String       @map("inspection_id")
+  storagePath    String       @map("storage_path")
+  fileName       String       @map("file_name")
+  mimeType       String       @map("mime_type")
+  fileSize       Int          @map("file_size")
+  checksum       String
+  uploadedById   String       @map("uploaded_by")
+  retentionUntil DateTime?    @map("retention_until")
+  inspection     Inspection   @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  uploadedBy     User         @relation("EvidenceUploader", fields: [uploadedById], references: [id])
+  analyses       AiAnalysis[]
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@index([inspectionId, createdAt])
+  @@map("evidence")
+}
+
+model AiAnalysis {
+  id          String           @id @default(cuid())
+  evidenceId  String           @map("evidence_id")
+  status      AiAnalysisStatus @default(PENDING)
+  provider    String
+  modelVersion String          @map("model_version")
+  confidence  Decimal?         @db.Decimal(5, 4)
+  result      Json?
+  errorCode   String?          @map("error_code")
+  evidence    Evidence         @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  job         AiAnalysisJob?
+  validations AiValidation[]
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  @@index([status, createdAt])
+  @@map("ai_analysis")
+}
+
+model AiAnalysisJob {
+  id          String      @id @default(cuid())
+  analysisId  String      @unique @map("analysis_id")
+  status      AiJobStatus @default(PENDING)
+  attempts    Int         @default(0)
+  runAfter    DateTime    @default(now()) @map("run_after")
+  lockedAt    DateTime?   @map("locked_at")
+  lastError   String?     @map("last_error")
+  analysis    AiAnalysis  @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  @@index([status, runAfter])
+  @@map("ai_analysis_jobs")
+}
+
+model AiValidation {
+  id          String     @id @default(cuid())
+  analysisId  String     @map("analysis_id")
+  validatedById String   @map("validated_by_id")
+  confirmed   Boolean
+  notes       String?
+  analysis    AiAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  validatedBy User       @relation(fields: [validatedById], references: [id])
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  @@index([analysisId, createdAt])
+  @@map("ai_validations")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorId     String?  @map("actor_id")
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id")
+  metadata    Json?
+  ipAddress   String?  @map("ip_address")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId, createdAt])
+  @@map("audit_logs")
+}
