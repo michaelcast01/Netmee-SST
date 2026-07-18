@@ -5,7 +5,16 @@ const protectedPrefixes = ["/dashboard", "/inspecciones", "/inventario", "/noved
 
 export function proxy(request: NextRequest) {
   const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
-  if (protectedPrefixes.some((prefix) => request.nextUrl.pathname.startsWith(prefix)) && !getSessionCookie(request)) {
+  const sessionCookie = getSessionCookie(request);
+
+  if (request.nextUrl.pathname === "/") {
+    const destination = new URL(sessionCookie ? "/dashboard" : "/login", request.url);
+    const redirect = NextResponse.redirect(destination);
+    redirect.headers.set("x-request-id", requestId);
+    return redirect;
+  }
+
+  if (protectedPrefixes.some((prefix) => request.nextUrl.pathname.startsWith(prefix)) && !sessionCookie) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("next", request.nextUrl.pathname);
     const redirect = NextResponse.redirect(loginUrl);

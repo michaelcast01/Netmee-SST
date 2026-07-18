@@ -24,6 +24,7 @@ export function LoginForm() {
       setError("Correo o contraseña incorrectos. Verifica tus datos e intenta nuevamente.");
       return;
     }
+    console.log("[NETMEE] Inicio de sesión correcto; redirigiendo al panel.");
     window.location.assign("/dashboard");
   }
 
