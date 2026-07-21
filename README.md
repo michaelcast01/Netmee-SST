@@ -29,6 +29,18 @@ npm run dev
 
 Antes del seed, defina credenciales seguras para el administrador y las variables de Better Auth en `.env`. Abra `http://localhost:3000`. El endpoint operativo está en `GET /api/v1/health`.
 
+## Verificación de EPP con IA
+
+La carga de evidencias puede iniciar una verificación visual asíncrona con Gemini. El servidor descarga la imagen privada mediante una URL firmada de cinco minutos, la envía como datos inline y exige una respuesta JSON validada. La interfaz separa cada EPP en visible, no visible o no concluyente y nunca aprueba automáticamente una inspección: el resultado requiere validación humana de SST.
+
+1. Cree una clave gratuita en [Google AI Studio](https://aistudio.google.com/apikey).
+2. Configure `AI_PROVIDER="gemini"`, `GEMINI_API_KEY` y `AI_WORKER_SECRET` en `.env`.
+3. Mantenga `GEMINI_MODEL` configurable; el valor inicial es `gemini-3.5-flash`.
+
+El primer intento se ejecuta con `after()` sin bloquear la carga. PostgreSQL conserva el trabajo y sus reintentos; en producción, programe llamadas autenticadas a `POST /api/internal/ai/process` para drenar trabajos pendientes tras reinicios o límites de ejecución. Puede ejecutar varios workers: el bloqueo optimista evita procesar dos veces el mismo trabajo.
+
+El nivel gratuito de Gemini no cobra tokens de entrada/salida, pero sus límites dependen del proyecto y Google indica que los datos enviados en ese nivel pueden usarse para mejorar sus productos. Para fotografías sensibles o producción regulada, evalúe el nivel de pago (donde Google indica que no usa los datos para ese fin), consentimiento, residencia de datos y políticas internas antes de habilitarlo.
+
 ## Calidad
 
 ```bash

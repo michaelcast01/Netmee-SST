@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
+import { EvidenceAnalysis } from "@/components/evidence/evidence-analysis";
 import { EvidenceUploader } from "@/components/evidence/evidence-uploader";
 import { StatusBadge } from "@/components/inspections/status-badge";
 import { FlashMessage } from "@/components/ui/flash-message";
@@ -29,7 +30,17 @@ export default async function InspectionDetailPage({
       worker: { select: { name: true, email: true } },
       activity: { include: { hazards: { include: { hazard: true } } } },
       items: { orderBy: { ppeType: { name: "asc" } }, include: { ppeType: true } },
-      evidence: { orderBy: { createdAt: "desc" }, include: { uploadedBy: { select: { name: true } } } },
+      evidence: {
+        orderBy: { createdAt: "desc" },
+        include: {
+          uploadedBy: { select: { name: true } },
+          analyses: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { id: true, status: true, confidence: true, result: true, modelVersion: true, createdAt: true },
+          },
+        },
+      },
       history: { orderBy: { createdAt: "desc" }, include: { changedBy: { select: { name: true } } } },
       approvals: { orderBy: { signedAt: "desc" }, include: { reviewer: { select: { name: true, email: true } } } },
     },
@@ -149,6 +160,14 @@ export default async function InspectionDetailPage({
                     </button>
                   </form>
                 ) : null}
+                <EvidenceAnalysis
+                  evidenceId={evidence.id}
+                  initialAnalysis={evidence.analyses[0] ? {
+                    ...evidence.analyses[0],
+                    confidence: evidence.analyses[0].confidence === null ? null : Number(evidence.analyses[0].confidence),
+                    createdAt: evidence.analyses[0].createdAt.toISOString(),
+                  } : null}
+                />
               </article>
             ))}
             {!inspection.evidence.length ? <p className="text-sm text-[var(--muted)]">Aún no hay fotografías.</p> : null}
