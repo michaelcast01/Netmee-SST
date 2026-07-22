@@ -35,18 +35,18 @@ export default async function InspectionsPage({ searchParams }: { searchParams: 
     <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <p className="text-sm font-semibold text-[var(--brand)]">CONTROL PREVENTIVO</p>
+          <p className="eyebrow text-xs font-semibold text-[var(--brand)]">CONTROL PREVENTIVO</p>
           <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">Inspecciones</h1>
           <p className="mt-2 text-sm text-[var(--muted)]">Verificaciones previas y trazabilidad por actividad.</p>
         </div>
         {hasPermission(user.permissions, "inspection.create") ? (
-          <Link className="rounded-xl bg-[var(--brand)] px-5 py-3 text-center text-sm font-semibold text-white" href="/inspecciones/nueva">
+          <Link className="brand-cta rounded-xl px-5 py-3 text-center text-sm font-semibold text-white" href="/inspecciones/nueva">
             Nueva inspección
           </Link>
         ) : null}
       </div>
 
-      <form className="mt-6 grid gap-3 rounded-2xl border border-[var(--line)] bg-white p-4 sm:grid-cols-2 lg:grid-cols-[1fr_220px_auto]" method="get">
+      <form className="surface-card mt-6 grid gap-3 rounded-2xl p-4 sm:grid-cols-2 lg:grid-cols-[1fr_220px_auto]" method="get">
         <input className="auth-input mt-0 sm:col-span-2 lg:col-span-1" defaultValue={q} name="q" placeholder="Código, trabajador o actividad" type="search" />
         <select className="auth-input mt-0" defaultValue={status ?? ""} name="status">
           <option value="">Todos los estados</option>
@@ -56,7 +56,7 @@ export default async function InspectionsPage({ searchParams }: { searchParams: 
             </option>
           ))}
         </select>
-        <button className="rounded-xl bg-[var(--navy)] px-5 py-3 text-sm font-semibold text-white sm:col-span-2 lg:col-span-1" type="submit">
+        <button className="brand-cta rounded-xl px-5 py-3 text-sm font-semibold text-white sm:col-span-2 lg:col-span-1" type="submit">
           Buscar
         </button>
       </form>
@@ -84,10 +84,10 @@ export default async function InspectionsPage({ searchParams }: { searchParams: 
         ) : null}
       </div>
 
-      <div className="mt-5 hidden overflow-hidden rounded-2xl border border-[var(--line)] bg-white shadow-sm md:block">
+      <div className="surface-card mt-5 hidden overflow-hidden rounded-2xl md:block">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-[var(--line)] bg-slate-50 text-xs uppercase text-[var(--muted)]">
+            <thead className="border-b border-[var(--line)] bg-violet-50/70 text-xs uppercase tracking-wider text-[var(--muted)]">
               <tr>
                 <th className="px-5 py-4">Código</th>
                 <th className="px-5 py-4">Actividad</th>
@@ -98,7 +98,7 @@ export default async function InspectionsPage({ searchParams }: { searchParams: 
             </thead>
             <tbody className="divide-y divide-[var(--line)]">
               {inspections.map((inspection) => (
-                <tr className="hover:bg-slate-50" key={inspection.id}>
+                <tr className="transition-colors hover:bg-violet-50/60" key={inspection.id}>
                   <td className="px-5 py-4">
                     <Link className="font-mono text-xs font-semibold text-[var(--brand)]" href={`/inspecciones/${inspection.id}`}>
                       {inspection.code}

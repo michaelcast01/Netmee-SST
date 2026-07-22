@@ -1,15 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f4f6fa;
-  --foreground: #172036;
-  --surface: #f4f6fa;
-  --text: #172036;
-  --muted: #657089;
-  --line: #e2e7f0;
-  --navy: #111a2f;
-  --brand: #6547c7;
-  --brand-strong: #5032ae;
+  --background: #f5f3fa;
+  --foreground: #1d1634;
+  --surface: #f5f3fa;
+  --text: #1d1634;
+  --muted: #716987;
+  --line: #e5def1;
+  --navy: #160d2d;
+  --brand: #7553e8;
+  --brand-strong: #5a36d3;
+  --brand-soft: #eee9ff;
+  --plum: #2a1552;
+  --electric: #a88cff;
 }
 
 @theme inline {
@@ -22,10 +25,30 @@
 * { box-sizing: border-box; min-width: 0; }
 html, body { max-width: 100%; overflow-x: hidden; }
 body { background: var(--background); color: var(--foreground); font-family: "Geist", "Geist Fallback", Arial, sans-serif; }
+body::selection { background: #c9baff; color: #21133f; }
 img, video, canvas, svg { max-width: 100%; height: auto; }
 p, h1, h2, h3, td, th, a, span { overflow-wrap: anywhere; }
 input, select, textarea { max-width: 100%; }
 a { outline-offset: 4px; }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid rgb(168 140 255 / 55%); outline-offset: 3px; }
+
+.app-shell { background: radial-gradient(circle at 12% -5%, rgb(122 83 232 / 12%), transparent 30rem), linear-gradient(180deg, #faf9fd 0%, var(--surface) 28rem); }
+.brand-header { background: radial-gradient(circle at 18% 0%, rgb(137 96 255 / 22%), transparent 23rem), linear-gradient(112deg, #130a28 0%, #241045 54%, #160d2d 100%); box-shadow: 0 16px 44px rgb(31 14 60 / 18%); }
+.brand-mark { background: linear-gradient(145deg, #a98cff, #6a3fde 58%, #4a24a7); box-shadow: 0 9px 24px rgb(114 70 230 / 42%), inset 0 1px 0 rgb(255 255 255 / 35%); }
+.brand-nav a { position: relative; border-radius: 0.75rem; padding: 0.55rem 0.72rem; transition: color 160ms, background 160ms, transform 160ms; }
+.brand-nav a:hover { background: rgb(255 255 255 / 9%); color: white; transform: translateY(-1px); }
+.brand-nav a:focus-visible { outline-color: #c4b5fd; }
+.glass-control { border: 1px solid rgb(255 255 255 / 14%); background: rgb(255 255 255 / 7%); box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%); transition: background 160ms, border-color 160ms; }
+.glass-control:hover { border-color: rgb(255 255 255 / 26%); background: rgb(255 255 255 / 12%); }
+.eyebrow { letter-spacing: 0.16em; }
+.hero-panel { position: relative; overflow: hidden; border: 1px solid rgb(255 255 255 / 12%); background: radial-gradient(circle at 88% 12%, rgb(174 145 255 / 30%), transparent 17rem), linear-gradient(135deg, #1b0d37, #321565 68%, #4d2490); box-shadow: 0 24px 70px rgb(42 21 82 / 24%); }
+.metric-card { position: relative; overflow: hidden; border: 1px solid rgb(90 54 211 / 12%); background: rgb(255 255 255 / 88%); box-shadow: 0 14px 40px rgb(45 25 83 / 8%); backdrop-filter: blur(12px); transition: transform 180ms, box-shadow 180ms, border-color 180ms; }
+.metric-card::before { position: absolute; inset: 0 auto 0 0; width: 3px; content: ""; background: linear-gradient(#a88cff, #5a36d3); }
+.metric-card:hover { transform: translateY(-3px); border-color: rgb(117 83 232 / 30%); box-shadow: 0 20px 50px rgb(45 25 83 / 13%); }
+.surface-card { border: 1px solid rgb(90 54 211 / 12%); background: rgb(255 255 255 / 90%); box-shadow: 0 14px 42px rgb(45 25 83 / 8%); backdrop-filter: blur(12px); }
+.brand-cta { background: linear-gradient(135deg, #7d5af0, #5931cb); box-shadow: 0 10px 28px rgb(89 49 203 / 25%); transition: transform 160ms, box-shadow 160ms, filter 160ms; }
+.brand-cta:hover { transform: translateY(-2px); filter: saturate(1.12); box-shadow: 0 14px 34px rgb(89 49 203 / 34%); }
+.auth-visual { background: radial-gradient(circle at 18% 22%, rgb(157 122 255 / 28%), transparent 22rem), radial-gradient(circle at 84% 78%, rgb(109 56 218 / 28%), transparent 26rem), linear-gradient(145deg, #130925, #251044 52%, #180c31); }
 
 .status-dot { width: 0.65rem; height: 0.65rem; flex: none; border-radius: 999px; box-shadow: 0 0 0 5px currentColor; }
 .status-warning { color: #f3b63f; background: #f3b63f; box-shadow: 0 0 0 5px #fff5db; }
@@ -35,8 +58,9 @@ a { outline-offset: 4px; }
 .state-ready { background: #e9f8f0; color: #237451; }
 .state-planned { background: #f0f2f6; color: #657089; }
 
-.auth-input { margin-top: 0.5rem; width: 100%; border-radius: 0.75rem; border: 1px solid var(--line); background: white; padding: 0.8rem 0.9rem; color: var(--text); outline: none; transition: border-color 150ms, box-shadow 150ms; }
-.auth-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgb(101 71 199 / 12%); }
-.auth-button { width: 100%; border-radius: 0.75rem; background: var(--brand); padding: 0.85rem 1rem; color: white; font-size: 0.875rem; font-weight: 700; transition: background 150ms, opacity 150ms; }
-.auth-button:hover { background: var(--brand-strong); }
+.auth-input { margin-top: 0.5rem; width: 100%; border-radius: 0.9rem; border: 1px solid var(--line); background: rgb(255 255 255 / 88%); padding: 0.85rem 0.95rem; color: var(--text); outline: none; transition: border-color 150ms, box-shadow 150ms, background 150ms; }
+.auth-input:hover { border-color: #cec2e2; background: white; }
+.auth-input:focus { border-color: var(--brand); background: white; box-shadow: 0 0 0 4px rgb(117 83 232 / 12%); }
+.auth-button { width: 100%; border-radius: 0.9rem; background: linear-gradient(135deg, var(--brand), var(--brand-strong)); padding: 0.9rem 1rem; color: white; font-size: 0.875rem; font-weight: 750; box-shadow: 0 10px 26px rgb(90 54 211 / 24%); transition: transform 150ms, box-shadow 150ms, opacity 150ms; }
+.auth-button:hover { transform: translateY(-1px); box-shadow: 0 14px 30px rgb(90 54 211 / 32%); }
 .auth-button:disabled { cursor: wait; opacity: 0.65; }
