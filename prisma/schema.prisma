@@ -490,6 +490,8 @@ model AiAnalysis {
   provider    String
   modelVersion String          @map("model_version")
   confidence  Decimal?         @db.Decimal(5, 4)
+  predictedCompliant Boolean?  @map("predicted_compliant")
+  needsReview Boolean          @default(true) @map("needs_review")
   result      Json?
   errorCode   String?          @map("error_code")
   evidence    Evidence         @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
@@ -499,6 +501,7 @@ model AiAnalysis {
   updatedAt   DateTime         @updatedAt @map("updated_at")
 
   @@index([status, createdAt])
+  @@index([needsReview, createdAt])
   @@map("ai_analysis")
 }
 

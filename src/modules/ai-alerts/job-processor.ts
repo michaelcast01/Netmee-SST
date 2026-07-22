@@ -2,7 +2,7 @@ import { getPrisma } from "@/lib/db/prisma";
 import { createEvidenceDownloadUrl } from "@/lib/storage/s3";
 import { getPpeAnalysisService } from "@/modules/ai-alerts/analysis-service";
 
-const RETRY_DELAYS_MS = [60_000, 5 * 60_000, 15 * 60_000] as const;
+const RETRY_DELAYS_MS = [2_000, 8_000, 30_000] as const;
 
 function confidenceThreshold() {
   const configured = Number(process.env.AI_CONFIDENCE_THRESHOLD ?? "0.7");
@@ -43,7 +43,17 @@ export async function processAnalysisJob(jobId?: string) {
     const lowConfidence = !result.personDetected || result.uncertainPpe.length > 0 || result.confidence < confidenceThreshold();
     const status = lowConfidence ? "LOW_CONFIDENCE" : result.missingPpe.length ? "DETECTED" : "NOT_DETECTED";
     await prisma.$transaction([
-      prisma.aiAnalysis.update({ where: { id: analysis.id }, data: { status, confidence: result.confidence, result } }),
+      prisma.aiAnalysis.update({
+        where: { id: analysis.id },
+        data: {
+          status,
+          confidence: result.confidence,
+          predictedCompliant: result.compliant,
+          needsReview: true,
+          modelVersion: result.modelUsed ?? analysis.modelVersion,
+          result,
+        },
+      }),
       prisma.aiAnalysisJob.update({ where: { id: candidate.id }, data: { status: "COMPLETED", lockedAt: null, lastError: null } }),
     ]);
     return { processed: true as const, analysisId: analysis.id, status };
@@ -51,8 +61,12 @@ export async function processAnalysisJob(jobId?: string) {
     const message = error instanceof Error ? error.message.slice(0, 500) : "Error desconocido";
     const currentAttempt = candidate.attempts + 1;
     const retryDelay = RETRY_DELAYS_MS[Math.min(currentAttempt - 1, RETRY_DELAYS_MS.length - 1)];
+    const willRetry = currentAttempt < RETRY_DELAYS_MS.length;
     await prisma.$transaction([
-      prisma.aiAnalysis.update({ where: { id: candidate.analysisId }, data: { status: "ERROR", errorCode: "ANALYSIS_FAILED" } }),
+      prisma.aiAnalysis.update({
+        where: { id: candidate.analysisId },
+        data: { status: willRetry ? "PENDING" : "ERROR", errorCode: "ANALYSIS_FAILED" },
+      }),
       prisma.aiAnalysisJob.update({
         where: { id: candidate.id },
         data: { status: "FAILED", lockedAt: null, lastError: message, runAfter: new Date(Date.now() + retryDelay) },

@@ -72,4 +72,28 @@ describe("GeminiPPEAnalysisService", () => {
     expect(result.uncertainPpe).toEqual(["Guantes"]);
     expect(result.assessments[1].confidence).toBe(0);
   });
+
+  it("usa el modelo alternativo cuando el principal está temporalmente saturado", async () => {
+    process.env.AI_PROVIDER = "gemini";
+    process.env.GEMINI_API_KEY = "test-key";
+    process.env.GEMINI_MODEL = "primary-model";
+    process.env.GEMINI_FALLBACK_MODELS = "fallback-model";
+    const output = {
+      personDetected: true,
+      imageQuality: "GOOD",
+      summary: "EPP visible.",
+      items: [{ name: "Casco", status: "DETECTED", confidence: 0.95, reason: "Visible." }],
+    };
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(new Uint8Array([1]), { headers: { "content-type": "image/webp" } }))
+      .mockResolvedValueOnce(new Response("saturado", { status: 503 }))
+      .mockResolvedValueOnce(Response.json({ candidates: [{ content: { parts: [{ text: JSON.stringify(output) }] } }] }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getPpeAnalysisService().analyze({ evidenceId: "evidence-3", imageUrl: "https://storage.test/evidence.webp", requiredPpe: ["Casco"] });
+
+    expect(result.modelUsed).toBe("fallback-model");
+    expect(fetchMock.mock.calls[1][0]).toContain("primary-model:generateContent");
+    expect(fetchMock.mock.calls[2][0]).toContain("fallback-model:generateContent");
+  });
 });

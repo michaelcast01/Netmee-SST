@@ -29,6 +29,7 @@ export type AnalysisSnapshot = {
   result: unknown;
   modelVersion: string;
   createdAt: string;
+  needsReview?: boolean;
 };
 
 const activeStatuses = new Set(["PENDING", "PROCESSING"]);
@@ -53,11 +54,13 @@ function statusLabel(status: string) {
   } as Record<string, string>)[status] ?? status;
 }
 
-export function EvidenceAnalysis({ evidenceId, initialAnalysis }: { evidenceId: string; initialAnalysis: AnalysisSnapshot | null }) {
+export function EvidenceAnalysis({ evidenceId, initialAnalysis, canValidate = false }: { evidenceId: string; initialAnalysis: AnalysisSnapshot | null; canValidate?: boolean }) {
   const router = useRouter();
   const [analysis, setAnalysis] = useState(initialAnalysis);
   const [message, setMessage] = useState("");
   const [requesting, setRequesting] = useState(false);
+  const [validating, setValidating] = useState(false);
+  const [validationNotes, setValidationNotes] = useState("");
   const result = asResult(analysis?.result);
   const analysisId = analysis?.id;
   const analysisStatus = analysis?.status;
@@ -106,6 +109,30 @@ export function EvidenceAnalysis({ evidenceId, initialAnalysis }: { evidenceId: 
     }
   }
 
+  async function validateAnalysis(confirmed: boolean) {
+    if (!analysis) return;
+    setValidating(true);
+    setMessage("");
+    try {
+      const response = await fetch(`/api/v1/ai-alerts/${analysis.id}/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmed, notes: validationNotes || undefined }),
+      });
+      const payload = (await response.json()) as { data?: { status: string; correctiveActionCreated: boolean }; error?: string };
+      if (!response.ok || !payload.data) throw new Error(payload.error ?? "No se pudo guardar la validación.");
+      setAnalysis((current) => current ? { ...current, status: payload.data!.status, needsReview: false } : current);
+      setMessage(payload.data.correctiveActionCreated
+        ? "Validación guardada. Se creó una novedad y una acción correctiva automáticamente."
+        : "Validación humana guardada correctamente.");
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo guardar la validación.");
+    } finally {
+      setValidating(false);
+    }
+  }
+
   return (
     <div className="mt-3 rounded-lg bg-slate-50 p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -134,6 +161,24 @@ export function EvidenceAnalysis({ evidenceId, initialAnalysis }: { evidenceId: 
         </div>
       ) : analysis && activeStatuses.has(analysis.status) ? (
         <p className="mt-2 text-xs text-[var(--muted)]">Procesando de forma segura en segundo plano…</p>
+      ) : null}
+
+      {canValidate && analysis?.needsReview && result ? (
+        <div className="mt-3 rounded-lg border border-violet-200 bg-violet-50 p-3">
+          <label className="text-xs font-semibold" htmlFor={`validation-notes-${analysis.id}`}>Validación del responsable SST</label>
+          <textarea
+            className="mt-2 min-h-20 w-full rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs"
+            id={`validation-notes-${analysis.id}`}
+            maxLength={500}
+            onChange={(event) => setValidationNotes(event.target.value)}
+            placeholder="Observación de la revisión humana"
+            value={validationNotes}
+          />
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50" disabled={validating} onClick={() => validateAnalysis(true)} type="button">Confirmar resultado</button>
+            <button className="rounded-lg bg-slate-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50" disabled={validating} onClick={() => validateAnalysis(false)} type="button">Descartar resultado</button>
+          </div>
+        </div>
       ) : null}
 
       {!analysis || ["ERROR", "DETECTED", "NOT_DETECTED", "LOW_CONFIDENCE", "CONFIRMED", "DISCARDED"].includes(analysis.status) ? (

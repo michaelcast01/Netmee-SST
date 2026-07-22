@@ -37,7 +37,7 @@ export default async function InspectionDetailPage({
           analyses: {
             orderBy: { createdAt: "desc" },
             take: 1,
-            select: { id: true, status: true, confidence: true, result: true, modelVersion: true, createdAt: true },
+            select: { id: true, status: true, confidence: true, result: true, modelVersion: true, createdAt: true, needsReview: true },
           },
         },
       },
@@ -162,6 +162,7 @@ export default async function InspectionDetailPage({
                 ) : null}
                 <EvidenceAnalysis
                   evidenceId={evidence.id}
+                  canValidate={canReview}
                   initialAnalysis={evidence.analyses[0] ? {
                     ...evidence.analyses[0],
                     confidence: evidence.analyses[0].confidence === null ? null : Number(evidence.analyses[0].confidence),

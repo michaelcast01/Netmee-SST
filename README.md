@@ -35,9 +35,11 @@ La carga de evidencias puede iniciar una verificación visual asíncrona con Gem
 
 1. Cree una clave gratuita en [Google AI Studio](https://aistudio.google.com/apikey).
 2. Configure `AI_PROVIDER="gemini"`, `GEMINI_API_KEY` y `AI_WORKER_SECRET` en `.env`.
-3. Mantenga `GEMINI_MODEL` configurable; el valor inicial es `gemini-3.5-flash`.
+3. Mantenga `GEMINI_MODEL` configurable; el valor inicial es `gemini-3.5-flash`. Puede ordenar los modelos alternativos en `GEMINI_FALLBACK_MODELS` separados por comas.
 
-El primer intento se ejecuta con `after()` sin bloquear la carga. PostgreSQL conserva el trabajo y sus reintentos; en producción, programe llamadas autenticadas a `POST /api/internal/ai/process` para drenar trabajos pendientes tras reinicios o límites de ejecución. Puede ejecutar varios workers: el bloqueo optimista evita procesar dos veces el mismo trabajo.
+El primer intento se ejecuta con `after()` sin bloquear la carga. PostgreSQL conserva el trabajo y aplica reintentos escalonados; los errores transitorios también prueban automáticamente los modelos alternativos. En producción, programe llamadas autenticadas `GET` o `POST` a `/api/internal/ai/process` para drenar trabajos pendientes tras reinicios o límites de ejecución. Puede ejecutar varios workers: el bloqueo optimista evita procesar dos veces el mismo trabajo.
+
+El flujo operativo incluye captura guiada desde el celular, control de resolución, vista previa y análisis automático. Los resultados pendientes llegan a **Validaciones IA**, donde SST confirma o descarta la predicción. Al confirmar un incumplimiento con EPP faltante, el sistema crea de forma idempotente un incidente y una acción correctiva con vencimiento. El dashboard muestra cumplimiento detectado, confianza promedio, coincidencia entre IA y revisión humana y validaciones pendientes.
 
 El nivel gratuito de Gemini no cobra tokens de entrada/salida, pero sus límites dependen del proyecto y Google indica que los datos enviados en ese nivel pueden usarse para mejorar sus productos. Para fotografías sensibles o producción regulada, evalúe el nivel de pago (donde Google indica que no usa los datos para ese fin), consentimiento, residencia de datos y políticas internas antes de habilitarlo.
 

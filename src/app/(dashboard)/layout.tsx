@@ -19,6 +19,9 @@ export default async function DashboardLayout({
     <>
       <Link href="/dashboard">Inicio</Link>
       <Link href="/inspecciones">Inspecciones</Link>
+      {hasPermission(user.permissions, "inspection.review") ? (
+        <Link href="/validaciones-ia">Validaciones IA</Link>
+      ) : null}
       {hasPermission(user.permissions, "inventory.view") ? (
         <Link href="/inventario">Inventario</Link>
       ) : null}

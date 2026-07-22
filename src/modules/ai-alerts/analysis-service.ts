@@ -3,6 +3,7 @@ import { z } from "zod";
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const GEMINI_API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash";
+const DEFAULT_FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-flash-latest"];
 const SUPPORTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export type PPEAnalysisInput = {
@@ -28,6 +29,7 @@ const resultSchema = z.object({
   assessments: z.array(assessmentSchema).max(50),
   confidence: z.number().min(0).max(1),
   summary: z.string().max(500),
+  modelUsed: z.string().max(120).optional(),
 });
 
 export type PPEAnalysisResult = z.infer<typeof resultSchema>;
@@ -57,7 +59,7 @@ function clamp(value: number) {
   return Math.min(1, Math.max(0, value));
 }
 
-function normalizeGeminiResult(output: z.infer<typeof geminiOutputSchema>, requiredPpe: string[]): PPEAnalysisResult {
+function normalizeGeminiResult(output: z.infer<typeof geminiOutputSchema>, requiredPpe: string[], modelUsed: string): PPEAnalysisResult {
   const byName = new Map(output.items.map((item) => [normalizeName(item.name), item]));
   const assessments = requiredPpe.map((name) => {
     const assessment = byName.get(normalizeName(name));
@@ -84,11 +86,12 @@ function normalizeGeminiResult(output: z.infer<typeof geminiOutputSchema>, requi
     assessments,
     confidence,
     summary: output.summary,
+    modelUsed,
   });
 }
 
 class GeminiPPEAnalysisService implements PPEAnalysisService {
-  constructor(private readonly apiKey: string, private readonly model: string) {}
+  constructor(private readonly apiKey: string, private readonly models: string[]) {}
 
   async analyze(input: PPEAnalysisInput): Promise<PPEAnalysisResult> {
     const requiredPpe = [...new Set(input.requiredPpe.map((item) => item.trim()).filter(Boolean))].slice(0, 50);
@@ -105,10 +108,7 @@ class GeminiPPEAnalysisService implements PPEAnalysisService {
     const imageBytes = new Uint8Array(await imageResponse.arrayBuffer());
     if (!imageBytes.length || imageBytes.length > MAX_IMAGE_BYTES) throw new Error("La evidencia supera el límite permitido para el análisis.");
 
-    const response = await fetch(`${GEMINI_API_BASE_URL}/models/${encodeURIComponent(this.model)}:generateContent`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": this.apiKey },
-      body: JSON.stringify({
+    const requestBody = JSON.stringify({
         contents: [{
           role: "user",
           parts: [
@@ -155,15 +155,26 @@ class GeminiPPEAnalysisService implements PPEAnalysisService {
             },
           },
         },
-      }),
-      signal: AbortSignal.timeout(45_000),
     });
-    if (!response.ok) throw new Error(`Gemini no pudo completar el análisis (${response.status}).`);
-
-    const payload = geminiResponseSchema.parse(await response.json());
-    const text = payload.candidates[0].content.parts.map((part) => part.text ?? "").join("").trim();
-    if (!text) throw new Error("Gemini no devolvió un resultado analizable.");
-    return normalizeGeminiResult(geminiOutputSchema.parse(JSON.parse(text)), requiredPpe);
+    let lastStatus = 0;
+    for (const model of this.models) {
+      const response = await fetch(`${GEMINI_API_BASE_URL}/models/${encodeURIComponent(model)}:generateContent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": this.apiKey },
+        body: requestBody,
+        signal: AbortSignal.timeout(45_000),
+      });
+      lastStatus = response.status;
+      if (!response.ok) {
+        if (response.status === 429 || response.status >= 500) continue;
+        throw new Error(`Gemini no pudo completar el análisis (${response.status}).`);
+      }
+      const payload = geminiResponseSchema.parse(await response.json());
+      const text = payload.candidates[0].content.parts.map((part) => part.text ?? "").join("").trim();
+      if (!text) continue;
+      return normalizeGeminiResult(geminiOutputSchema.parse(JSON.parse(text)), requiredPpe, model);
+    }
+    throw new Error(`Los modelos de Gemini no están disponibles temporalmente (${lastStatus || "sin respuesta"}).`);
   }
 }
 
@@ -197,7 +208,9 @@ export function getPpeAnalysisService(): PPEAnalysisService {
   if (provider === "gemini") {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error("La API de Gemini no está configurada.");
-    return new GeminiPPEAnalysisService(apiKey, getAiModelVersion());
+    const fallbackModels = (process.env.GEMINI_FALLBACK_MODELS ?? DEFAULT_FALLBACK_MODELS.join(","))
+      .split(",").map((model) => model.trim()).filter(Boolean);
+    return new GeminiPPEAnalysisService(apiKey, [...new Set([getAiModelVersion(), ...fallbackModels])]);
   }
   if (provider === "http") {
     const baseUrl = process.env.AI_SERVICE_URL;

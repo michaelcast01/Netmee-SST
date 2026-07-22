@@ -30,10 +30,16 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const analysis = await getPrisma().aiAnalysis.findFirst({
     where: { evidenceId: id },
     orderBy: { createdAt: "desc" },
-    select: { id: true, status: true, confidence: true, result: true, modelVersion: true, createdAt: true },
+    select: {
+      id: true, status: true, confidence: true, result: true, modelVersion: true, createdAt: true, needsReview: true,
+      job: { select: { id: true, status: true, runAfter: true } },
+    },
   });
+  if (analysis?.status === "PENDING" && analysis.job?.status === "FAILED" && analysis.job.runAfter <= new Date()) {
+    after(() => processAnalysisJob(analysis.job!.id).catch(() => undefined));
+  }
   return Response.json({
-    data: analysis ? { ...analysis, confidence: analysis.confidence === null ? null : Number(analysis.confidence) } : null,
+    data: analysis ? { ...analysis, job: undefined, confidence: analysis.confidence === null ? null : Number(analysis.confidence) } : null,
   });
 }
 
