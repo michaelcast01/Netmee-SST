@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { CheckCircle2, ClipboardPlus } from "lucide-react";
 
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { requireUser } from "@/lib/auth/dal";
 import { hasPermission } from "@/lib/auth/permissions";
 import { getPrisma } from "@/lib/db/prisma";
@@ -57,21 +60,11 @@ export default async function IncidentsPage() {
   ]);
   return (
     <main className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
-      <div>
-        <p className="text-sm font-semibold text-[var(--brand)]">
-          MEJORA CONTINUA
-        </p>
-        <h1 className="mt-2 text-3xl font-semibold">
-          Novedades y acciones correctivas
-        </h1>
-        <p className="mt-2 text-sm text-[var(--muted)]">
-          Registra hallazgos, asigna responsables y verifica su cierre.
-        </p>
-      </div>
+      <PageHeader description="Registra hallazgos, asigna responsables y verifica su cierre." eyebrow="MEJORA CONTINUA" icon={ClipboardPlus} title="Novedades y acciones correctivas" />
       {canCreate ? (
         <form
           action={createIncidentAction}
-          className="mt-7 grid gap-4 rounded-2xl border border-[var(--line)] bg-white p-6 shadow-sm sm:grid-cols-2"
+          className="surface-card mt-7 grid gap-4 rounded-2xl p-6 sm:grid-cols-2"
         >
           <h2 className="font-semibold sm:col-span-2">Registrar novedad</h2>
           <div>
@@ -141,7 +134,7 @@ export default async function IncidentsPage() {
       <section className="mt-7 space-y-4">
         {incidents.map((incident) => (
           <article
-            className="rounded-2xl border border-[var(--line)] bg-white p-6 shadow-sm"
+            className="surface-card rounded-2xl p-6"
             key={incident.id}
           >
             <div className="flex flex-col justify-between gap-3 sm:flex-row">
@@ -170,7 +163,7 @@ export default async function IncidentsPage() {
             {incident.actions.length ? (
               <div className="mt-5 space-y-3 border-t border-[var(--line)] pt-5">
                 {incident.actions.map((action) => (
-                  <div className="rounded-xl bg-slate-50 p-4" key={action.id}>
+                  <div className="data-row rounded-xl p-4" key={action.id}>
                     <div className="flex flex-col justify-between gap-2 sm:flex-row">
                       <div>
                         <p className="text-sm font-semibold">
@@ -260,9 +253,7 @@ export default async function IncidentsPage() {
           </article>
         ))}
         {incidents.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-[var(--line)] p-10 text-center text-sm text-[var(--muted)]">
-            No hay novedades registradas.
-          </div>
+          <EmptyState description="Cuando se registre un hallazgo o la IA genere una acción correctiva, aparecerá aquí." icon={CheckCircle2} title="No hay novedades pendientes" />
         ) : null}
       </section>
     </main>

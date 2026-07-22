@@ -1,6 +1,9 @@
 import type { Prisma } from "@/generated/prisma/client";
 import type { Metadata } from "next";
+import { History, SearchX } from "lucide-react";
 import { Pagination } from "@/components/data/pagination";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { requirePermission } from "@/lib/auth/dal";
 import { getPrisma } from "@/lib/db/prisma";
 import { auditLabel } from "@/lib/display-labels";
@@ -49,13 +52,9 @@ export default async function AuditPage({
   const names = new Map(actors.map((a) => [a.id, a.name]));
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-      <p className="text-sm font-semibold text-[var(--brand)]">TRAZABILIDAD</p>
-      <h1 className="mt-2 text-3xl font-semibold">Auditoría</h1>
-      <p className="mt-2 text-sm text-[var(--muted)]">
-        Registro paginado de operaciones sensibles.
-      </p>
+      <PageHeader description="Registro paginado de operaciones sensibles y cambios administrativos." eyebrow="TRAZABILIDAD" icon={History} title="Auditoría" />
       <form
-        className="mt-6 grid gap-3 rounded-2xl border border-[var(--line)] bg-white p-4 sm:grid-cols-[1fr_220px_auto]"
+        className="surface-card mt-6 grid gap-3 rounded-2xl p-4 sm:grid-cols-[1fr_220px_auto]"
         method="get"
       >
         <input
@@ -71,11 +70,11 @@ export default async function AuditPage({
           name="entity"
           placeholder="Tipo de entidad"
         />
-        <button className="rounded-xl bg-[var(--navy)] px-5 py-3 text-sm font-semibold text-white">
+        <button className="brand-cta rounded-xl px-5 py-3 text-sm font-semibold text-white">
           Buscar
         </button>
       </form>
-      <div className="mt-5 overflow-hidden rounded-2xl border border-[var(--line)] bg-white shadow-sm">
+      <div className="surface-card mt-5 overflow-hidden rounded-2xl">
         <div className="divide-y divide-[var(--line)] md:hidden">
           {logs.map((log) => (
             <article className="p-4" key={log.id}>
@@ -98,15 +97,11 @@ export default async function AuditPage({
               </p>
             </article>
           ))}
-          {!logs.length ? (
-            <p className="p-8 text-center text-sm text-[var(--muted)]">
-              No hay resultados.
-            </p>
-          ) : null}
+          {!logs.length ? <EmptyState description="Prueba con otros filtros para encontrar una operación registrada." icon={SearchX} title="No hay registros coincidentes" /> : null}
         </div>
         <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-[var(--line)] bg-slate-50 text-xs uppercase text-[var(--muted)]">
+            <thead className="border-b border-[var(--line)] bg-violet-50/70 text-xs uppercase tracking-wider text-[var(--muted)]">
               <tr>
                 <th className="px-5 py-4">Fecha</th>
                 <th className="px-5 py-4">Actor</th>
@@ -116,7 +111,7 @@ export default async function AuditPage({
             </thead>
             <tbody className="divide-y divide-[var(--line)]">
               {logs.map((l) => (
-                <tr key={l.id}>
+                <tr className="transition-colors hover:bg-violet-50/60" key={l.id}>
                   <td className="px-5 py-4 font-mono text-xs">
                     {l.createdAt.toLocaleString("es-CO")}
                   </td>

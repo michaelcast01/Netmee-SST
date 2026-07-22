@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { UsersRound } from "lucide-react";
 
+import { PageHeader } from "@/components/ui/page-header";
 import { requirePermission } from "@/lib/auth/dal";
 import { roles } from "@/lib/auth/permissions";
 import { getPrisma } from "@/lib/db/prisma";
@@ -22,17 +24,11 @@ export default async function UsersPage() {
   });
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-      <p className="text-sm font-semibold text-[var(--brand)]">
-        ADMINISTRACIÓN
-      </p>
-      <h1 className="mt-2 text-3xl font-semibold">Usuarios y roles</h1>
-      <p className="mt-2 text-sm text-[var(--muted)]">
-        Los cambios quedan registrados en auditoría.
-      </p>
+      <PageHeader description="Gestiona responsabilidades con trazabilidad de cada cambio de acceso." eyebrow="ADMINISTRACIÓN" icon={UsersRound} title="Usuarios y roles" />
       <div className="mt-6 space-y-3 md:hidden">
         {users.map((user) => (
           <article
-            className="rounded-2xl border border-[var(--line)] bg-white p-4 shadow-sm"
+            className="surface-card rounded-2xl p-4"
             key={user.id}
           >
             <div className="flex items-start justify-between gap-3">
@@ -48,7 +44,7 @@ export default async function UsersPage() {
                 {user.active ? "Activo" : "Inactivo"}
               </span>
             </div>
-            <div className="mt-4 rounded-xl bg-slate-50 p-3">
+            <div className="data-row mt-4 rounded-xl p-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                 Roles actuales
               </p>
@@ -78,7 +74,7 @@ export default async function UsersPage() {
                 ))}
               </select>
               <button
-                className="rounded-lg bg-[var(--brand)] px-4 py-3 text-sm font-semibold text-white"
+                className="brand-cta rounded-lg px-4 py-3 text-sm font-semibold text-white"
                 type="submit"
               >
                 Asignar rol
@@ -87,10 +83,10 @@ export default async function UsersPage() {
           </article>
         ))}
       </div>
-      <div className="mt-7 hidden overflow-hidden rounded-2xl border border-[var(--line)] bg-white shadow-sm md:block">
+      <div className="surface-card mt-7 hidden overflow-hidden rounded-2xl md:block">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-[var(--line)] bg-slate-50 text-xs uppercase text-[var(--muted)]">
+            <thead className="border-b border-[var(--line)] bg-violet-50/70 text-xs uppercase tracking-wider text-[var(--muted)]">
               <tr>
                 <th className="px-5 py-4">Usuario</th>
                 <th className="px-5 py-4">Roles</th>
@@ -99,7 +95,7 @@ export default async function UsersPage() {
             </thead>
             <tbody className="divide-y divide-[var(--line)]">
               {users.map((user) => (
-                <tr key={user.id}>
+                <tr className="transition-colors hover:bg-violet-50/60" key={user.id}>
                   <td className="px-5 py-4">
                     <p className="font-semibold">{user.name}</p>
                     <p className="mt-1 text-xs text-[var(--muted)]">
@@ -128,7 +124,7 @@ export default async function UsersPage() {
                         ))}
                       </select>
                       <button
-                        className="rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-semibold text-white"
+                        className="brand-cta rounded-lg px-3 py-2 text-xs font-semibold text-white"
                         type="submit"
                       >
                         Asignar

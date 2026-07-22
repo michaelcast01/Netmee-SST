@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import { ScanSearch, ShieldCheck } from "lucide-react";
 
 import { EvidenceAnalysis } from "@/components/evidence/evidence-analysis";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { requirePermission } from "@/lib/auth/dal";
 import { getPrisma } from "@/lib/db/prisma";
 
@@ -25,12 +28,10 @@ export default async function AiValidationsPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-      <p className="text-sm font-semibold text-[var(--brand)]">CONTROL HUMANO</p>
-      <h1 className="mt-2 text-3xl font-semibold">Validaciones de IA</h1>
-      <p className="mt-2 text-sm text-[var(--muted)]">Confirma o descarta cada resultado. Los EPP faltantes confirmados generan automáticamente una acción correctiva.</p>
+      <PageHeader description="Confirma o descarta cada resultado. Los EPP faltantes confirmados generan automáticamente una acción correctiva." eyebrow="CONTROL HUMANO" icon={ScanSearch} title="Validaciones de IA" />
       <section className="mt-7 grid gap-4 lg:grid-cols-2">
         {analyses.map((analysis) => (
-          <article className="rounded-2xl border border-[var(--line)] bg-white p-5 shadow-sm" key={analysis.id}>
+          <article className="surface-card rounded-2xl p-5" key={analysis.id}>
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <a className="font-mono text-xs font-semibold text-[var(--brand)]" href={`/inspecciones/${analysis.evidence.inspection.id}`}>{analysis.evidence.inspection.code}</a>
@@ -54,7 +55,7 @@ export default async function AiValidationsPage() {
             />
           </article>
         ))}
-        {!analyses.length ? <div className="rounded-2xl border border-dashed border-[var(--line)] p-12 text-center text-sm text-[var(--muted)] lg:col-span-2">No hay análisis pendientes de validación.</div> : null}
+        {!analyses.length ? <div className="lg:col-span-2"><EmptyState description="La cola está limpia. Los nuevos análisis que necesiten criterio humano aparecerán aquí." icon={ShieldCheck} title="No hay validaciones pendientes" /></div> : null}
       </section>
     </main>
   );

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { LogoutButton } from "@/components/auth/logout-button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { requireUser } from "@/lib/auth/dal";
 import { hasPermission } from "@/lib/auth/permissions";
 import { getPrisma } from "@/lib/db/prisma";
@@ -41,6 +42,7 @@ export default async function DashboardLayout({
   );
   return (
     <div className="app-shell min-h-screen">
+      <a className="skip-link" href="#main-content">Saltar al contenido principal</a>
       <header className="brand-header sticky top-0 z-40 border-b border-white/10 text-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-6 lg:px-8">
           <Link className="flex items-center gap-2 sm:gap-3" href="/dashboard">
@@ -60,6 +62,7 @@ export default async function DashboardLayout({
             {navigation}
           </nav>
           <div className="flex items-center gap-2 sm:gap-3">
+            <ThemeToggle />
             <Link
               aria-label={`${unread} notificaciones sin leer`}
               className="glass-control rounded-xl px-2.5 py-2 text-xs font-semibold sm:px-3"
@@ -85,7 +88,7 @@ export default async function DashboardLayout({
           </details>
         </div>
       </header>
-      {children}
+      <div id="main-content" tabIndex={-1}>{children}</div>
     </div>
   );
 }
