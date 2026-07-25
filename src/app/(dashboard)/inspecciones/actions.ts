@@ -18,7 +18,7 @@ const reviewSchema = z.object({ inspectionId: idSchema, decision: z.enum(["APROB
 const retentionSchema = z.object({ inspectionId: idSchema, evidenceId: idSchema, legalHold: z.enum(["true", "false"]) });
 
 function inspectionCode() {
-  return `INS-${new Date().getFullYear()}-${randomBytes(4).toString("hex").toUpperCase()}`;
+  return  `INS-${new Date().getFullYear()}-${randomBytes(4).toString("hex").toUpperCase()}`;
 }
 
 export async function createInspectionAction(formData: FormData) {
