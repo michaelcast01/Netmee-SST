@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { ActiveDashboardNav } from "@/components/layout/active-dashboard-nav";
+import { buildDashboardLinks } from "@/components/layout/dashboard-nav";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { requireUser } from "@/lib/auth/dal";
@@ -16,30 +18,14 @@ export default async function DashboardLayout({
   const unread = await getPrisma().notification.count({
     where: { userId: user.id, readAt: null },
   });
-  const navigation = (
-    <>
-      <Link href="/dashboard">Inicio</Link>
-      <Link href="/inspecciones">Inspecciones</Link>
-      {hasPermission(user.permissions, "inspection.review") ? (
-        <Link href="/validaciones-ia">Validaciones IA</Link>
-      ) : null}
-      {hasPermission(user.permissions, "inventory.view") ? (
-        <Link href="/inventario">Inventario</Link>
-      ) : null}
-      {hasPermission(user.permissions, "incident.create") ? (
-        <Link href="/novedades">Novedades</Link>
-      ) : null}
-      {hasPermission(user.permissions, "report.export") ? (
-        <Link href="/reportes">Reportes</Link>
-      ) : null}
-      {hasPermission(user.permissions, "user.manage") ? (
-        <Link href="/administracion/usuarios">Usuarios</Link>
-      ) : null}
-      {hasPermission(user.permissions, "audit.view") ? (
-        <Link href="/administracion/auditoria">Auditoría</Link>
-      ) : null}
-    </>
-  );
+  const navigation = buildDashboardLinks({
+    inspectionReview: hasPermission(user.permissions, "inspection.review"),
+    inventoryView: hasPermission(user.permissions, "inventory.view"),
+    incidentCreate: hasPermission(user.permissions, "incident.create"),
+    reportExport: hasPermission(user.permissions, "report.export"),
+    userManage: hasPermission(user.permissions, "user.manage"),
+    auditView: hasPermission(user.permissions, "audit.view"),
+  });
   return (
     <div className="app-shell min-h-screen">
       <a className="skip-link" href="#main-content">Saltar al contenido principal</a>
@@ -59,7 +45,7 @@ export default async function DashboardLayout({
             </span>
           </Link>
           <nav className="brand-nav hidden items-center gap-1 text-sm text-violet-100/75 lg:flex">
-            {navigation}
+            <ActiveDashboardNav links={navigation} />
           </nav>
           <div className="flex items-center gap-2 sm:gap-3">
             <ThemeToggle />
@@ -83,7 +69,7 @@ export default async function DashboardLayout({
               Menú de navegación
             </summary>
             <nav className="brand-nav grid grid-cols-2 gap-2 pb-2 pt-1 text-sm text-violet-100/80 sm:grid-cols-4 [&_a]:bg-white/5 [&_a]:px-3 [&_a]:py-2.5">
-              {navigation}
+              <ActiveDashboardNav links={navigation} mobile />
             </nav>
           </details>
         </div>

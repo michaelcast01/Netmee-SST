@@ -40,6 +40,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .brand-nav a { position: relative; border-radius: 0.75rem; padding: 0.55rem 0.72rem; transition: color 160ms, background 160ms, transform 160ms; }
 .brand-nav a:hover { background: rgb(255 255 255 / 9%); color: white; transform: translateY(-1px); }
 .brand-nav a:focus-visible { outline-color: #c4b5fd; }
+.brand-nav a.is-active, .brand-nav a[aria-current="page"] { background: rgb(255 255 255 / 14%); color: white; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 12%); }
+.admin-nav summary { cursor: pointer; list-style: none; border-radius: .75rem; padding: .55rem .72rem; font-weight: 600; }
+.admin-nav summary::-webkit-details-marker { display: none; }
+.admin-nav summary span { margin-left: .4rem; font-size: .7em; opacity: .8; }
+.admin-nav summary:hover, .admin-nav summary[aria-current="page"], .admin-nav[open] summary { background: rgb(255 255 255 / 12%); color: white; }
+.admin-nav div a { display: block; white-space: nowrap; }
 .glass-control { border: 1px solid rgb(255 255 255 / 14%); background: rgb(255 255 255 / 7%); box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%); transition: background 160ms, border-color 160ms; }
 .glass-control:hover { border-color: rgb(255 255 255 / 26%); background: rgb(255 255 255 / 12%); }
 .eyebrow { letter-spacing: 0.16em; }
@@ -66,6 +72,11 @@ html[data-theme="dark"] .data-row, html[data-theme="dark"] .bg-slate-50, html[da
 html[data-theme="dark"] .data-row:hover, html[data-theme="dark"] tr:hover { background: #2a1b43; }
 html[data-theme="dark"] .page-icon { color: #d8cbff; background: linear-gradient(145deg, #362257, #291942); }
 html[data-theme="dark"] .empty-state img { opacity: .82; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+  .metric-card:hover, .brand-cta:hover, .brand-nav a:hover, .data-row:hover { transform: none; }
+}
 
 .status-dot { width: 0.65rem; height: 0.65rem; flex: none; border-radius: 999px; box-shadow: 0 0 0 5px currentColor; }
 .status-warning { color: #f3b63f; background: #f3b63f; box-shadow: 0 0 0 5px #fff5db; }

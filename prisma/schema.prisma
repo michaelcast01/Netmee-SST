@@ -440,12 +440,16 @@ model Evidence {
   uploadedById   String       @map("uploaded_by")
   retentionUntil DateTime?    @map("retention_until")
   legalHold      Boolean      @default(false) @map("legal_hold")
+  retentionDeleteStartedAt DateTime? @map("retention_delete_started_at")
+  retentionDeleteAttempts  Int       @default(0) @map("retention_delete_attempts")
+  retentionDeleteLastError String?   @map("retention_delete_last_error")
   inspection     Inspection   @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
   uploadedBy     User         @relation("EvidenceUploader", fields: [uploadedById], references: [id])
   analyses       AiAnalysis[]
   createdAt      DateTime     @default(now()) @map("created_at")
 
   @@index([inspectionId, createdAt])
+  @@index([retentionUntil, legalHold, retentionDeleteStartedAt], map: "evidence_retention_cleanup_idx")
   @@map("evidence")
 }
 

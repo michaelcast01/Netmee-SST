@@ -1,4 +1,5 @@
 import { getPrisma } from "@/lib/db/prisma";
+import { logEvent } from "@/lib/observability/logger";
 import { createEvidenceDownloadUrl } from "@/lib/storage/s3";
 import { getPpeAnalysisService } from "@/modules/ai-alerts/analysis-service";
 
@@ -9,7 +10,8 @@ function confidenceThreshold() {
   return Number.isFinite(configured) && configured >= 0 && configured <= 1 ? configured : 0.7;
 }
 
-export async function processAnalysisJob(jobId?: string) {
+export async function processAnalysisJob(jobId?: string, context: { requestId?: string } = {}) {
+  const startedAt = Date.now();
   const prisma = getPrisma();
   const candidate = await prisma.aiAnalysisJob.findFirst({
     where: {
@@ -21,7 +23,10 @@ export async function processAnalysisJob(jobId?: string) {
     },
     orderBy: { createdAt: "asc" },
   });
-  if (!candidate) return { processed: false as const };
+  if (!candidate) {
+    logEvent("info", "ai.job.empty", { requestId: context.requestId });
+    return { processed: false as const };
+  }
 
   const locked = await prisma.aiAnalysisJob.updateMany({
     where: { id: candidate.id, status: candidate.status, lockedAt: null },
@@ -56,6 +61,14 @@ export async function processAnalysisJob(jobId?: string) {
       }),
       prisma.aiAnalysisJob.update({ where: { id: candidate.id }, data: { status: "COMPLETED", lockedAt: null, lastError: null } }),
     ]);
+    logEvent("info", "ai.job.completed", {
+      requestId: context.requestId,
+      jobId: candidate.id,
+      analysisId: analysis.id,
+      status,
+      attempt: candidate.attempts + 1,
+      durationMs: Date.now() - startedAt,
+    });
     return { processed: true as const, analysisId: analysis.id, status };
   } catch (error) {
     const message = error instanceof Error ? error.message.slice(0, 500) : "Error desconocido";
@@ -72,6 +85,15 @@ export async function processAnalysisJob(jobId?: string) {
         data: { status: "FAILED", lockedAt: null, lastError: message, runAfter: new Date(Date.now() + retryDelay) },
       }),
     ]);
+    logEvent("error", "ai.job.failed", {
+      requestId: context.requestId,
+      jobId: candidate.id,
+      analysisId: candidate.analysisId,
+      attempt: currentAttempt,
+      willRetry,
+      durationMs: Date.now() - startedAt,
+      error: message,
+    });
     throw error;
   }
 }

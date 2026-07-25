@@ -9,8 +9,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const user = await getCurrentUser();
   if (!user) return Response.json({ error: "No autenticado" }, { status: 401 });
   const { id } = await params;
-  const evidence = await getPrisma().evidence.findUnique({ where: { id }, select: { storagePath: true, inspection: { select: { workerId: true } } } });
+  const evidence = await getPrisma().evidence.findUnique({ where: { id }, select: { storagePath: true, retentionDeleteStartedAt: true, inspection: { select: { workerId: true } } } });
   if (!evidence) return Response.json({ error: "Evidencia no encontrada" }, { status: 404 });
+  if (evidence.retentionDeleteStartedAt) return Response.json({ error: "La evidencia está en proceso de eliminación por retención" }, { status: 410 });
   if (evidence.inspection.workerId !== user.id && !hasPermission(user.permissions, "inspection.review")) return Response.json({ error: "Sin permiso" }, { status: 403 });
   return Response.redirect(await createEvidenceDownloadUrl(evidence.storagePath), 307);
 }
