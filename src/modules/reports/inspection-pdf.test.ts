@@ -12,6 +12,7 @@ describe("createInspectionPdf", () => {
       createdAt: new Date("2026-07-24T12:00:00.000Z"),
       items: [{ name: "Casco", required: true, compliant: true, observation: null }],
       evidence: [{ fileName: "evidencia.jpg", checksum: "abc123", retentionUntil: new Date("2027-07-24"), legalHold: false }],
+      aiReviews: [{ modelVersion: "gemini-test", confidence: 0.94, summary: "EPP completo", decision: "CUMPLE", validator: "SST", notes: "Verificación visual", validatedAt: new Date("2026-07-24T12:30:00.000Z") }],
       history: [{ fromStatus: null, toStatus: "BORRADOR", changedBy: "Sistema", reason: null, createdAt: new Date("2026-07-24T12:00:00.000Z") }],
       approvals: [{ decision: "APROBADA", signerName: "SST", reviewerEmail: "sst@example.com", reason: "Cumple", signatureHash: "hash", signedAt: new Date("2026-07-24T13:00:00.000Z") }],
     });

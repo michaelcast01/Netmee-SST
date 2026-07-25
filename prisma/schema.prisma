@@ -104,6 +104,12 @@ enum ApprovalDecision {
   RECHAZADA
 }
 
+enum AiComplianceDecision {
+  CUMPLE
+  NO_CUMPLE
+  NO_CONCLUYENTE
+}
+
 model User {
   id              String           @id
   email           String           @unique
@@ -283,18 +289,23 @@ model ActivityPpeRequirement {
 }
 
 model PpeItem {
-  id           String        @id @default(cuid())
-  serialNumber String?       @unique @map("serial_number")
-  qrCode       String        @unique @map("qr_code")
-  ppeTypeId    String        @map("ppe_type_id")
-  status       PpeItemStatus @default(DISPONIBLE)
-  size         String?
-  expiresAt    DateTime?     @map("expires_at")
-  ppeType      PpeType       @relation(fields: [ppeTypeId], references: [id])
-  assignments  PpeAssignment[]
-  movements    PpeMovement[]
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
+  id               String        @id @default(cuid())
+  serialNumber     String?       @unique @map("serial_number")
+  qrCode           String        @unique @map("qr_code")
+  ppeTypeId        String        @map("ppe_type_id")
+  status           PpeItemStatus @default(DISPONIBLE)
+  size             String?
+  expiresAt        DateTime?     @map("expires_at")
+  imageStoragePath String?       @map("image_storage_path")
+  imageFileName    String?       @map("image_file_name")
+  imageMimeType    String?       @map("image_mime_type")
+  imageFileSize    Int?          @map("image_file_size")
+  imageChecksum    String?       @map("image_checksum")
+  ppeType          PpeType       @relation(fields: [ppeTypeId], references: [id])
+  assignments      PpeAssignment[]
+  movements        PpeMovement[]
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
 
   @@index([status, expiresAt])
   @@map("ppe_items")
@@ -526,14 +537,15 @@ model AiAnalysisJob {
 }
 
 model AiValidation {
-  id          String     @id @default(cuid())
-  analysisId  String     @map("analysis_id")
+  id            String               @id @default(cuid())
+  analysisId    String               @map("analysis_id")
   validatedById String   @map("validated_by_id")
-  confirmed   Boolean
-  notes       String?
-  analysis    AiAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
-  validatedBy User       @relation(fields: [validatedById], references: [id])
-  createdAt   DateTime   @default(now()) @map("created_at")
+  confirmed     Boolean
+  decision      AiComplianceDecision
+  notes         String?
+  analysis      AiAnalysis           @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  validatedBy   User                 @relation(fields: [validatedById], references: [id])
+  createdAt     DateTime             @default(now()) @map("created_at")
 
   @@index([analysisId, createdAt])
   @@map("ai_validations")

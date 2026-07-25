@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 
 import { EvidenceAnalysis } from "@/components/evidence/evidence-analysis";
@@ -37,7 +38,20 @@ export default async function InspectionDetailPage({
           analyses: {
             orderBy: { createdAt: "desc" },
             take: 1,
-            select: { id: true, status: true, confidence: true, result: true, modelVersion: true, createdAt: true, needsReview: true },
+            select: {
+              id: true,
+              status: true,
+              confidence: true,
+              result: true,
+              modelVersion: true,
+              createdAt: true,
+              needsReview: true,
+              validations: {
+                orderBy: { createdAt: "desc" },
+                take: 1,
+                select: { decision: true },
+              },
+            },
           },
         },
       },
@@ -53,6 +67,10 @@ export default async function InspectionDetailPage({
   const canSubmit = editable && ["EN_PROGRESO", "CORRECCION_PENDIENTE"].includes(inspection.status);
   const verified = inspection.items.filter((item) => item.compliant !== null).length;
   const requiredPending = inspection.items.some((item) => item.required && item.compliant !== true);
+  const hasEvidence = inspection.evidence.length > 0;
+  const latestAnalysis = inspection.evidence[0]?.analyses[0];
+  const latestHumanDecision = latestAnalysis?.validations[0]?.decision;
+  const approvalReady = Boolean(latestAnalysis && !latestAnalysis.needsReview && latestHumanDecision === "CUMPLE");
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
@@ -94,7 +112,10 @@ export default async function InspectionDetailPage({
       </section>
 
       <section className="mt-6 space-y-3">
-        <h2 className="text-lg font-semibold">Lista de verificación</h2>
+        <div>
+          <h2 className="text-lg font-semibold">Declaración del técnico</h2>
+          <p className="mt-1 text-xs text-[var(--muted)]">Esta lista registra la revisión inicial. La fotografía será evaluada por IA y la decisión final corresponde a SST.</p>
+        </div>
         {inspection.items.map((item) => (
           <form action={updateInspectionItemAction} className="rounded-2xl border border-[var(--line)] bg-white p-4 shadow-sm sm:p-5" key={item.id}>
             <input name="inspectionId" type="hidden" value={inspection.id} />
@@ -140,6 +161,16 @@ export default async function InspectionDetailPage({
           <div className="space-y-2">
             {inspection.evidence.map((evidence) => (
               <article className="rounded-xl border border-[var(--line)] p-3 text-sm" key={evidence.id}>
+                <a className="relative mb-3 block aspect-[4/3] overflow-hidden rounded-lg bg-slate-100" href={`/api/v1/evidence/${evidence.id}`} target="_blank">
+                  <Image
+                    alt={`Evidencia fotográfica ${evidence.fileName}`}
+                    className="object-cover"
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 430px"
+                    src={`/api/v1/evidence/${evidence.id}`}
+                    unoptimized
+                  />
+                </a>
                 <a className="break-all font-semibold hover:text-[var(--brand)]" href={`/api/v1/evidence/${evidence.id}`} target="_blank">
                   {evidence.fileName}
                 </a>
@@ -180,13 +211,15 @@ export default async function InspectionDetailPage({
         <form action={submitInspectionForReviewAction} className="mt-6 rounded-2xl border border-violet-200 bg-violet-50 p-4 sm:p-5">
           <input name="inspectionId" type="hidden" value={inspection.id} />
           <p className="text-sm text-violet-900">
-            {requiredPending
+            {!hasEvidence
+              ? "Carga una fotografía de cuerpo completo antes de enviar a revisión."
+              : requiredPending
               ? "Marca todos los EPP obligatorios como “Cumple” antes de enviar a revisión."
-              : "Todos los EPP obligatorios están verificados. Puedes enviar la inspección a revisión."}
+              : "La declaración y la evidencia están completas. Puedes enviar la inspección a revisión."}
           </p>
           <button
             className="mt-3 w-full rounded-lg bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-            disabled={requiredPending}
+            disabled={requiredPending || !hasEvidence}
             type="submit"
           >
             Enviar a revisión
@@ -197,6 +230,11 @@ export default async function InspectionDetailPage({
       {canReview && inspection.status === "PENDIENTE_REVISION" ? (
         <section className="mt-6 rounded-2xl border border-[var(--line)] bg-white p-4 shadow-sm sm:p-6">
           <h2 className="font-semibold">Decisión y firma del responsable SST</h2>
+          <div className={`mt-3 rounded-xl px-4 py-3 text-sm ${approvalReady ? "bg-emerald-50 text-emerald-900" : "bg-amber-50 text-amber-900"}`}>
+            {approvalReady
+              ? "La fotografía más reciente fue analizada por IA y validada por SST como “Cumple”. La aprobación está habilitada."
+              : "Antes de aprobar, valida el análisis de la fotografía más reciente como “Cumple”. Puedes devolver la inspección para corrección en cualquier momento."}
+          </div>
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             {(["APROBADA", "RECHAZADA"] as const).map((decision) => (
               <form action={reviewInspectionAction} className="rounded-xl border border-[var(--line)] p-4" key={decision}>
@@ -226,6 +264,7 @@ export default async function InspectionDetailPage({
                 <p className="mt-2 text-xs text-[var(--muted)]">La confirmación genera una huella SHA-256 de la decisión firmada.</p>
                 <button
                   className={`mt-3 w-full rounded-lg px-4 py-2 text-sm font-semibold text-white sm:w-auto ${decision === "APROBADA" ? "bg-emerald-600" : "bg-red-600"}`}
+                  disabled={decision === "APROBADA" && !approvalReady}
                   type="submit"
                 >
                   Confirmar y firmar

@@ -45,6 +45,14 @@ describe("reviewInspection", () => {
     expect(result.status).toBe("CORRECCION_PENDIENTE");
   });
 
+  it("impide aprobar si un EPP obligatorio no cumple", () => {
+    expect(() => reviewInspection({
+      id: "inspection-1",
+      status: "PENDIENTE_REVISION",
+      items: [{ id: "gloves", required: true, compliant: false }],
+    }, "APROBADA")).toThrow(InspectionRuleError);
+  });
+
   it("rechaza una transición desde borrador", () => {
     expect(() => reviewInspection({ id: "inspection-1", status: "BORRADOR", items: [] }, "APROBADA")).toThrow(InspectionRuleError);
   });

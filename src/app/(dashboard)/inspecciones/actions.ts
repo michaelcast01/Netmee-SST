@@ -77,8 +77,14 @@ export async function submitInspectionForReviewAction(formData: FormData) {
     const actor = await requirePermission("inspection.create");
     const parsedId = idSchema.parse(inspectionId);
     const prisma = getPrisma();
-    const inspection = await prisma.inspection.findUniqueOrThrow({ where: { id: parsedId }, include: { items: true } });
+    const inspection = await prisma.inspection.findUniqueOrThrow({
+      where: { id: parsedId },
+      include: { items: true, evidence: { select: { id: true }, take: 1 } },
+    });
     if (inspection.workerId !== actor.id) throw new Error("No puedes enviar una inspección de otro trabajador.");
+    if (inspection.evidence.length === 0) {
+      throw new Error("Carga una fotografía de cuerpo completo antes de enviar la inspección.");
+    }
     const updated = requestInspectionReview({ id: inspection.id, status: inspection.status, items: inspection.items.map((item) => ({ id: item.id, required: item.required, compliant: item.compliant })) });
     await prisma.$transaction(async (tx) => {
       const changed = await tx.inspection.updateMany({ where: { id: parsedId, status: inspection.status }, data: { status: updated.status } });
@@ -106,6 +112,30 @@ export async function reviewInspectionAction(formData: FormData) {
     const signedAt = new Date();
     const signatureHash = createHash("sha256").update([input.inspectionId, actor.id, input.decision, input.signerName, input.reason, signedAt.toISOString()].join("|")).digest("hex");
     const isApproved = updated.status === "APROBADA";
+    if (isApproved) {
+      const latestEvidence = await prisma.evidence.findFirst({
+        where: { inspectionId: input.inspectionId },
+        orderBy: { createdAt: "desc" },
+        select: {
+          analyses: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: {
+              needsReview: true,
+              validations: {
+                orderBy: { createdAt: "desc" },
+                take: 1,
+                select: { decision: true },
+              },
+            },
+          },
+        },
+      });
+      const latestAnalysis = latestEvidence?.analyses[0];
+      if (!latestAnalysis || latestAnalysis.needsReview || latestAnalysis.validations[0]?.decision !== "CUMPLE") {
+        throw new Error("Para aprobar, la fotografía más reciente debe ser analizada por IA y validada por SST como “Cumple”.");
+      }
+    }
     await prisma.$transaction(async (tx) => {
       const changed = await tx.inspection.updateMany({
         where: { id: input.inspectionId, status: "PENDIENTE_REVISION" },

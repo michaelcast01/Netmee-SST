@@ -69,7 +69,17 @@ export function reviewInspection(
   if (inspection.status !== "PENDIENTE_REVISION") {
     throw new InspectionRuleError("Solo una inspección pendiente de revisión puede evaluarse.");
   }
-  if (decision === "APROBADA") return { ...inspection, status: "APROBADA" };
+  if (decision === "APROBADA") {
+    const hasNonCompliantRequiredItem = inspection.items.some(
+      (item) => item.required && item.compliant !== true,
+    );
+    if (hasNonCompliantRequiredItem) {
+      throw new InspectionRuleError(
+        "No se puede aprobar: existe un EPP obligatorio sin cumplimiento confirmado.",
+      );
+    }
+    return { ...inspection, status: "APROBADA" };
+  }
   return { ...inspection, status: "CORRECCION_PENDIENTE" };
 }
 

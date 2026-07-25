@@ -86,13 +86,19 @@ async function seed() {
     await prisma.activityHazard.upsert({ where: { activityId_hazardId: { activityId: heightWork.id, hazardId: hazard.id } }, create: { activityId: heightWork.id, hazardId: hazard.id }, update: {} });
   }
   const requiredPpe = [
-    { code: "HELMET_CHINSTRAP", name: "Casco con barbuquejo" },
-    { code: "FULL_BODY_HARNESS", name: "Arnés de cuerpo completo" },
-    { code: "LANYARD", name: "Eslinga de seguridad" },
-    { code: "SAFETY_FOOTWEAR", name: "Calzado de seguridad" },
+    { code: "HELMET_CHINSTRAP", name: "Casco con barbuquejo", usefulLife: 1_095 },
+    { code: "PROTECTIVE_GLOVES", name: "Guantes de protección", usefulLife: 180 },
+    { code: "SAFETY_GLASSES", name: "Gafas de seguridad", usefulLife: 365 },
+    { code: "FULL_BODY_HARNESS", name: "Arnés de cuerpo completo", usefulLife: 1_825 },
+    { code: "LANYARD", name: "Eslinga de seguridad", usefulLife: 1_825 },
+    { code: "SAFETY_FOOTWEAR", name: "Calzado de seguridad", usefulLife: 365 },
   ];
   for (const definition of requiredPpe) {
-    const ppeType = await prisma.ppeType.upsert({ where: { code: definition.code }, create: definition, update: { name: definition.name } });
+    const ppeType = await prisma.ppeType.upsert({
+      where: { code: definition.code },
+      create: definition,
+      update: { name: definition.name, usefulLife: definition.usefulLife },
+    });
     await prisma.activityPpeRequirement.upsert({ where: { activityId_ppeTypeId: { activityId: heightWork.id, ppeTypeId: ppeType.id } }, create: { activityId: heightWork.id, ppeTypeId: ppeType.id, required: true }, update: { required: true } });
   }
 }

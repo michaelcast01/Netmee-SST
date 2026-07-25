@@ -1,7 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 
 import { getCurrentUser } from "@/lib/auth/dal";
-import { hasPermission } from "@/lib/auth/permissions";
 import { getPrisma } from "@/lib/db/prisma";
 import { deleteEvidenceObject, putEvidenceObject } from "@/lib/storage/s3";
 import { detectSupportedImage, MAX_EVIDENCE_BYTES } from "@/modules/evidence/file-validation";
@@ -14,8 +13,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { id: inspectionId } = await params;
   const inspection = await getPrisma().inspection.findUnique({ where: { id: inspectionId }, select: { workerId: true, status: true } });
   if (!inspection) return Response.json({ error: "Inspección no encontrada" }, { status: 404 });
-  if (inspection.workerId !== user.id && !hasPermission(user.permissions, "inspection.review")) return Response.json({ error: "Sin permiso" }, { status: 403 });
-  if (["APROBADA", "RECHAZADA", "CANCELADA"].includes(inspection.status)) return Response.json({ error: "La inspección ya está cerrada" }, { status: 409 });
+  if (inspection.workerId !== user.id) return Response.json({ error: "Solo el técnico responsable puede cargar su evidencia" }, { status: 403 });
+  if (!["BORRADOR", "EN_PROGRESO", "CORRECCION_PENDIENTE"].includes(inspection.status)) {
+    return Response.json({ error: "La inspección no admite nuevas fotografías en su estado actual" }, { status: 409 });
+  }
 
   const form = await request.formData();
   const file = form.get("file");

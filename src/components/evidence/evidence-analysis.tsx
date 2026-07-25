@@ -48,8 +48,8 @@ function statusLabel(status: string) {
     DETECTED: "Faltan implementos",
     NOT_DETECTED: "EPP completo",
     LOW_CONFIDENCE: "Revisión manual necesaria",
-    CONFIRMED: "Hallazgo confirmado",
-    DISCARDED: "Hallazgo descartado",
+    CONFIRMED: "IA y SST coinciden",
+    DISCARDED: "Criterio SST registrado",
     ERROR: "No se pudo analizar",
   } as Record<string, string>)[status] ?? status;
 }
@@ -109,7 +109,7 @@ export function EvidenceAnalysis({ evidenceId, initialAnalysis, canValidate = fa
     }
   }
 
-  async function validateAnalysis(confirmed: boolean) {
+  async function validateAnalysis(decision: "CUMPLE" | "NO_CUMPLE" | "NO_CONCLUYENTE") {
     if (!analysis) return;
     setValidating(true);
     setMessage("");
@@ -117,14 +117,26 @@ export function EvidenceAnalysis({ evidenceId, initialAnalysis, canValidate = fa
       const response = await fetch(`/api/v1/ai-alerts/${analysis.id}/validate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ confirmed, notes: validationNotes || undefined }),
+        body: JSON.stringify({ decision, notes: validationNotes || undefined }),
       });
-      const payload = (await response.json()) as { data?: { status: string; correctiveActionCreated: boolean }; error?: string };
+      const payload = (await response.json()) as {
+        data?: {
+          status: string;
+          decision: "CUMPLE" | "NO_CUMPLE" | "NO_CONCLUYENTE";
+          correctiveActionCreated: boolean;
+          inspectionReturnedForCorrection: boolean;
+        };
+        error?: string;
+      };
       if (!response.ok || !payload.data) throw new Error(payload.error ?? "No se pudo guardar la validación.");
       setAnalysis((current) => current ? { ...current, status: payload.data!.status, needsReview: false } : current);
-      setMessage(payload.data.correctiveActionCreated
-        ? "Validación guardada. Se creó una novedad y una acción correctiva automáticamente."
-        : "Validación humana guardada correctamente.");
+      setMessage(
+        payload.data.correctiveActionCreated
+          ? "Decisión guardada. Se creó una novedad y una acción correctiva automáticamente."
+          : payload.data.inspectionReturnedForCorrection
+            ? "Se solicitó una nueva fotografía y la inspección volvió a corrección."
+            : "Decisión humana guardada correctamente.",
+      );
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo guardar la validación.");
@@ -175,8 +187,9 @@ export function EvidenceAnalysis({ evidenceId, initialAnalysis, canValidate = fa
             value={validationNotes}
           />
           <div className="mt-2 flex flex-wrap gap-2">
-            <button className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50" disabled={validating} onClick={() => validateAnalysis(true)} type="button">Confirmar resultado</button>
-            <button className="rounded-lg bg-slate-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50" disabled={validating} onClick={() => validateAnalysis(false)} type="button">Descartar resultado</button>
+            <button className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50" disabled={validating} onClick={() => validateAnalysis("CUMPLE")} type="button">Determinar que cumple</button>
+            <button className="rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50" disabled={validating} onClick={() => validateAnalysis("NO_CUMPLE")} type="button">Determinar que no cumple</button>
+            <button className="rounded-lg bg-slate-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50" disabled={validating} onClick={() => validateAnalysis("NO_CONCLUYENTE")} type="button">Solicitar nueva foto</button>
           </div>
         </div>
       ) : null}

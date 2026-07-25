@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ScanSearch, ShieldCheck } from "lucide-react";
+import Image from "next/image";
 
 import { EvidenceAnalysis } from "@/components/evidence/evidence-analysis";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -40,6 +41,16 @@ export default async function AiValidationsPage() {
               </div>
               <a className="rounded-lg border border-[var(--line)] px-3 py-2 text-xs font-semibold" href={`/api/v1/evidence/${analysis.evidence.id}`} target="_blank">Ver foto</a>
             </div>
+            <a className="relative mt-4 block aspect-[4/3] overflow-hidden rounded-xl bg-slate-100" href={`/api/v1/evidence/${analysis.evidence.id}`} target="_blank">
+              <Image
+                alt={`Evidencia de ${analysis.evidence.inspection.worker.name}`}
+                className="object-cover"
+                fill
+                sizes="(max-width: 1024px) 100vw, 540px"
+                src={`/api/v1/evidence/${analysis.evidence.id}`}
+                unoptimized
+              />
+            </a>
             <EvidenceAnalysis
               canValidate
               evidenceId={analysis.evidence.id}
