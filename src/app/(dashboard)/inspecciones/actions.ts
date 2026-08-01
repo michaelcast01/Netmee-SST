@@ -2,7 +2,7 @@
 
 import { createHash, randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { z } from "zod";
 
 import { getCurrentUser, requirePermission } from "@/lib/auth/dal";
@@ -43,7 +43,7 @@ export async function createInspectionAction(formData: FormData) {
     });
     redirect(`/inspecciones/${inspection.id}`);
   } catch (error) {
-    if (error instanceof Error && error.message === "NEXT_REDIRECT") throw error;
+    unstable_rethrow(error);
     redirectWithFlash("/inspecciones/nueva", { error: encodeURIComponent(actionErrorMessage(error)) });
   }
 }
@@ -66,7 +66,7 @@ export async function updateInspectionItemAction(formData: FormData) {
     });
     revalidatePath(`/inspecciones/${input.inspectionId}`);
   } catch (error) {
-    if (error instanceof Error && error.message === "NEXT_REDIRECT") throw error;
+    unstable_rethrow(error);
     redirectWithFlash(`/inspecciones/${inspectionId}`, { error: encodeURIComponent(actionErrorMessage(error)) });
   }
 }
@@ -96,7 +96,7 @@ export async function submitInspectionForReviewAction(formData: FormData) {
     revalidatePath("/inspecciones");
     redirectWithFlash(`/inspecciones/${parsedId}`, { success: encodeURIComponent("Inspección enviada a revisión.") });
   } catch (error) {
-    if (error instanceof Error && error.message === "NEXT_REDIRECT") throw error;
+    unstable_rethrow(error);
     redirectWithFlash(`/inspecciones/${inspectionId}`, { error: encodeURIComponent(actionErrorMessage(error)) });
   }
 }
@@ -156,7 +156,7 @@ export async function reviewInspectionAction(formData: FormData) {
     const successMessage = isApproved ? "Inspección aprobada y firmada." : "Inspección devuelta para corrección.";
     redirectWithFlash(`/inspecciones/${input.inspectionId}`, { success: encodeURIComponent(successMessage) });
   } catch (error) {
-    if (error instanceof Error && error.message === "NEXT_REDIRECT") throw error;
+    unstable_rethrow(error);
     redirectWithFlash(`/inspecciones/${inspectionId}`, { error: encodeURIComponent(actionErrorMessage(error)) });
   }
 }
@@ -178,7 +178,7 @@ export async function setEvidenceLegalHoldAction(formData: FormData) {
     revalidatePath(`/inspecciones/${input.inspectionId}`);
     redirectWithFlash(`/inspecciones/${input.inspectionId}`, { success: encodeURIComponent(input.legalHold === "true" ? "Retención legal activada." : "Retención legal liberada.") });
   } catch (error) {
-    if (error instanceof Error && error.message === "NEXT_REDIRECT") throw error;
+    unstable_rethrow(error);
     redirectWithFlash(`/inspecciones/${inspectionId}`, { error: encodeURIComponent(actionErrorMessage(error)) });
   }
 }

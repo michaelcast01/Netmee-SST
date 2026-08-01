@@ -29,12 +29,11 @@ export async function assignPpeItemAction(formData: FormData) {
       await tx.ppeMovement.create({ data: { ppeItemId: input.ppeItemId, actorId: actor.id, type: "DELIVERY", notes: input.notes || null, metadata: { workerId: input.workerId } } });
       await tx.auditLog.create({ data: { actorId: actor.id, action: "inventory.item.assigned", entityType: "ppe_item", entityId: input.ppeItemId, metadata: { workerId: input.workerId } } });
     });
-    revalidatePath("/inventario");
-    redirectWithFlash("/inventario", { success: encodeURIComponent("Elemento asignado correctamente.") });
   } catch (error) {
-    if (error instanceof Error && error.message === "NEXT_REDIRECT") throw error;
     redirectWithFlash("/inventario", { error: encodeURIComponent(actionErrorMessage(error)) });
   }
+  revalidatePath("/inventario");
+  redirectWithFlash("/inventario", { success: encodeURIComponent("Elemento asignado correctamente.") });
 }
 
 export async function returnPpeItemAction(formData: FormData) {
@@ -55,10 +54,9 @@ export async function returnPpeItemAction(formData: FormData) {
       await tx.ppeMovement.create({ data: { ppeItemId: assignment.ppeItemId, actorId: actor.id, type: "RETURN", metadata: { workerId: assignment.workerId } } });
       await tx.auditLog.create({ data: { actorId: actor.id, action: "inventory.item.returned", entityType: "ppe_item", entityId: assignment.ppeItemId } });
     });
-    revalidatePath("/inventario");
-    redirectWithFlash("/inventario", { success: encodeURIComponent("Devolución registrada correctamente.") });
   } catch (error) {
-    if (error instanceof Error && error.message === "NEXT_REDIRECT") throw error;
     redirectWithFlash("/inventario", { error: encodeURIComponent(actionErrorMessage(error)) });
   }
+  revalidatePath("/inventario");
+  redirectWithFlash("/inventario", { success: encodeURIComponent("Devolución registrada correctamente.") });
 }

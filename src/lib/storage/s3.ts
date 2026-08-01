@@ -4,6 +4,7 @@ import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } fro
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { deleteLocalPrivateObject, getLocalPrivateObject, putLocalPrivateObject } from "@/lib/storage/local-private-storage";
+import { objectStorageKey } from "@/lib/storage/object-key";
 
 let client: S3Client | undefined;
 const testObjects = new Map<string, { body: Uint8Array; contentType: string }>();
@@ -49,19 +50,19 @@ export async function putPrivateObject(key: string, body: Uint8Array, contentTyp
   if (process.env.E2E_STORAGE_MEMORY === "true") { testObjects.set(key, { body, contentType }); return; }
   if (usesLocalStorage()) { await putLocalPrivateObject(key, body); return; }
   const { bucket } = getConfig();
-  await getClient().send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: body, ContentType: contentType, Metadata: { sha256: checksum } }));
+  await getClient().send(new PutObjectCommand({ Bucket: bucket, Key: objectStorageKey(key), Body: body, ContentType: contentType, Metadata: { sha256: checksum } }));
 }
 
 export async function deletePrivateObject(key: string) {
   if (process.env.E2E_STORAGE_MEMORY === "true") { testObjects.delete(key); return; }
   if (usesLocalStorage()) { await deleteLocalPrivateObject(key); return; }
   const { bucket } = getConfig();
-  await getClient().send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+  await getClient().send(new DeleteObjectCommand({ Bucket: bucket, Key: objectStorageKey(key) }));
 }
 
 export async function createPrivateDownloadUrl(key: string) {
   const { bucket } = getConfig();
-  return getSignedUrl(getClient(), new GetObjectCommand({ Bucket: bucket, Key: key }), { expiresIn: 5 * 60 });
+  return getSignedUrl(getClient(), new GetObjectCommand({ Bucket: bucket, Key: objectStorageKey(key) }), { expiresIn: 5 * 60 });
 }
 
 export function getInMemoryPrivateObject(key: string) {

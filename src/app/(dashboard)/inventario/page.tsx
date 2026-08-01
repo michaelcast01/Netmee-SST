@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { FlashMessage } from "@/components/ui/flash-message";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
+import { flashFromSearchParams } from "@/lib/actions/redirect-with-flash";
 import { requirePermission } from "@/lib/auth/dal";
 import { hasPermission } from "@/lib/auth/permissions";
 import { getPrisma } from "@/lib/db/prisma";
@@ -23,11 +24,14 @@ export const metadata: Metadata = { title: "Inventario de EPP" };
 export default async function InventoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string; expiry?: string; page?: string; created?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; expiry?: string; page?: string; created?: string; error?: string; success?: string }>;
 }) {
   const user = await requirePermission("inventory.view");
   const canUpdate = hasPermission(user.permissions, "inventory.update");
   const params = await searchParams;
+  const flash = params.created
+    ? { success: "Elemento y fotografía registrados correctamente." }
+    : flashFromSearchParams(params);
   const q = cleanSearch(params.q);
   const status = ppeStatuses.includes(params.status as PpeItemStatus)
     ? params.status as PpeItemStatus
@@ -80,7 +84,12 @@ export default async function InventoryPage({
           select: { id: true, name: true },
         })
       : Promise.resolve([]),
-    prisma.ppeItem.count({ where: { status: "DISPONIBLE" } }),
+    prisma.ppeItem.count({
+      where: {
+        status: "DISPONIBLE",
+        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+      },
+    }),
     prisma.ppeItem.count({ where: { status: "ASIGNADO" } }),
     prisma.ppeItem.count({
       where: {
@@ -100,7 +109,7 @@ export default async function InventoryPage({
         icon={PackageSearch}
         title="Inventario"
       />
-      {params.created ? <FlashMessage success="Elemento y fotografía registrados correctamente." /> : null}
+      <FlashMessage {...flash} />
 
       <section className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
@@ -134,6 +143,8 @@ export default async function InventoryPage({
       <div className="mt-5 space-y-4">
         {items.map((item) => {
           const assignment = item.assignments[0];
+          const isExpired = Boolean(item.expiresAt && item.expiresAt <= now);
+          const displayStatus = item.status === "DISPONIBLE" && isExpired ? "VENCIDO" : item.status;
           return (
             <article className="surface-card overflow-hidden rounded-2xl" key={item.id}>
               <div className="grid md:grid-cols-[220px_1fr]">
@@ -159,7 +170,7 @@ export default async function InventoryPage({
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className="font-semibold">{item.ppeType.name}</h2>
-                        <span className="rounded-full bg-[var(--brand-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--brand-strong)]">{ppeStatusLabels[item.status]}</span>
+                        <span className="rounded-full bg-[var(--brand-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--brand-strong)]">{ppeStatusLabels[displayStatus]}</span>
                       </div>
                       <p className="mt-2 font-mono text-xs text-[var(--muted)]">{item.qrCode}</p>
                       <p className="mt-1 text-xs text-[var(--muted)]">
@@ -167,7 +178,7 @@ export default async function InventoryPage({
                       </p>
                       {assignment ? <p className="mt-2 text-sm">Asignado a <strong>{assignment.worker.name}</strong></p> : null}
                     </div>
-                    {canUpdate && item.status === "DISPONIBLE" ? (
+                    {canUpdate && item.status === "DISPONIBLE" && !isExpired ? (
                       <form action={assignPpeItemAction} className="flex flex-col gap-2">
                         <input name="ppeItemId" type="hidden" value={item.id} />
                         <select aria-label="Técnico que recibirá el elemento" className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-xs" name="workerId" required>
