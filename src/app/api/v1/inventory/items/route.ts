@@ -4,24 +4,29 @@ import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth/dal";
 import { hasPermission } from "@/lib/auth/permissions";
 import { getPrisma } from "@/lib/db/prisma";
-import { deletePrivateObject, putPrivateObject } from "@/lib/storage/s3";
+import { logEvent, requestIdFrom } from "@/lib/observability/logger";
+import { deletePrivateObject, PrivateStorageConfigurationError, putPrivateObject } from "@/lib/storage/s3";
 import { detectSupportedImage, MAX_EVIDENCE_BYTES } from "@/modules/evidence/file-validation";
 import { createPpeItemSchema, parsePpeExpiry } from "@/modules/inventory/item-input";
 
 export const dynamic = "force-dynamic";
 
-function errorMessage(error: unknown) {
-  if (error instanceof z.ZodError) return error.issues[0]?.message ?? "Los datos del elemento no son válidos.";
+function errorResponse(error: unknown) {
+  if (error instanceof z.ZodError) return { message: error.issues[0]?.message ?? "Los datos del elemento no son válidos.", status: 400 };
   if (error && typeof error === "object" && "code" in error && error.code === "P2002") {
-    return "Ya existe un elemento con ese número de serie.";
+    return { message: "Ya existe un elemento con ese número de serie.", status: 409 };
   }
   if (error && typeof error === "object" && "code" in error && error.code === "P2025") {
-    return "El tipo de EPP seleccionado no existe.";
+    return { message: "El tipo de EPP seleccionado no existe.", status: 400 };
   }
-  return "No se pudo registrar el elemento.";
+  if (error instanceof PrivateStorageConfigurationError) {
+    return { message: error.message, status: 503 };
+  }
+  return { message: "No se pudo registrar el elemento. Intenta nuevamente.", status: 500 };
 }
 
 export async function POST(request: Request) {
+  const requestId = requestIdFrom(request);
   const actor = await getCurrentUser();
   if (!actor) return Response.json({ error: "No autenticado" }, { status: 401 });
   if (!hasPermission(actor.permissions, "inventory.update")) {
@@ -90,6 +95,13 @@ export async function POST(request: Request) {
     return Response.json({ data: { id: item.id } }, { status: 201 });
   } catch (error) {
     if (storagePath) await deletePrivateObject(storagePath).catch(() => undefined);
-    return Response.json({ error: errorMessage(error) }, { status: 400 });
+    const response = errorResponse(error);
+    if (response.status >= 500) {
+      logEvent("error", "inventory.item.create_failed", {
+        requestId,
+        errorName: error instanceof Error ? error.name : "UnknownError",
+      });
+    }
+    return Response.json({ error: response.message, requestId }, { status: response.status });
   }
 }

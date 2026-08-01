@@ -61,6 +61,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .data-row { background: rgb(247 244 252 / 80%); transition: background 160ms, transform 160ms; }
 .data-row:hover { background: var(--brand-soft); transform: translateX(2px); }
 .empty-state img { object-fit: cover; }
+.inspection-secondary-action { background: rgb(255 255 255 / 88%); color: var(--text); transition: border-color 150ms, background 150ms, transform 150ms; }
+.inspection-secondary-action:hover { border-color: var(--brand); background: var(--brand-soft); transform: translateY(-1px); }
+.hazard-chip { border-color: #fecdd3; background: #fff1f2; color: #be123c; }
 
 html[data-theme="dark"] { --background: #110b1d; --foreground: #f4efff; --surface: #110b1d; --text: #f4efff; --muted: #b7accb; --line: #3d3153; --brand: #a78bfa; --brand-strong: #c4b5fd; --brand-soft: #2b1b49; --plum: #f4efff; color-scheme: dark; }
 html[data-theme="dark"] .app-shell { background: radial-gradient(circle at 12% -5%, rgb(126 87 194 / 20%), transparent 32rem), linear-gradient(180deg, #160d27 0%, #110b1d 30rem); }
@@ -72,6 +75,9 @@ html[data-theme="dark"] .data-row, html[data-theme="dark"] .bg-slate-50, html[da
 html[data-theme="dark"] .data-row:hover, html[data-theme="dark"] tr:hover { background: #2a1b43; }
 html[data-theme="dark"] .page-icon { color: #d8cbff; background: linear-gradient(145deg, #362257, #291942); }
 html[data-theme="dark"] .empty-state img { opacity: .82; }
+html[data-theme="dark"] .inspection-secondary-action { background: #211632; }
+html[data-theme="dark"] .inspection-secondary-action:hover { background: #2b1b49; }
+html[data-theme="dark"] .hazard-chip { border-color: #713044; background: #3a1828; color: #fecdd3; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }

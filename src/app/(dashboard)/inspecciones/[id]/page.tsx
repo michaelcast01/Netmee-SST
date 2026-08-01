@@ -82,7 +82,7 @@ export default async function InspectionDetailPage({
             {inspection.worker.name} · {verified}/{inspection.items.length} elementos verificados
           </p>
           <a
-            className="mt-3 inline-block rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold"
+            className="inspection-secondary-action mt-3 inline-block rounded-lg border border-[var(--line)] px-3 py-2 text-xs font-semibold"
             href={`/api/v1/inspections/${inspection.id}/report.pdf`}
             target="_blank"
           >
@@ -94,17 +94,24 @@ export default async function InspectionDetailPage({
 
       <FlashMessage {...flash} />
 
+      {inspection.status === "BORRADOR" && editable ? (
+        <div className="mt-4 rounded-xl border border-violet-300 bg-[var(--brand-soft)] px-4 py-3 text-sm text-[var(--text)]">
+          <p className="font-semibold">Borrador editable</p>
+          <p className="mt-1 text-xs text-[var(--muted)]">Puedes completar o corregir cada elemento y cargar evidencia. El borrador pasará a “En progreso” al guardar la primera verificación.</p>
+        </div>
+      ) : null}
+
       {inspection.status === "CORRECCION_PENDIENTE" && editable ? (
         <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           Esta inspección fue devuelta para corrección. Actualiza los elementos señalados y vuelve a enviarla a revisión.
         </div>
       ) : null}
 
-      <section className="mt-6 rounded-2xl border border-[var(--line)] bg-white p-4 shadow-sm sm:p-6">
+      <section className="surface-card mt-6 rounded-2xl p-4 sm:p-6">
         <h2 className="font-semibold">Peligros asociados</h2>
         <div className="mt-3 flex flex-wrap gap-2">
           {inspection.activity.hazards.map(({ hazard }) => (
-            <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700" key={hazard.id}>
+            <span className="hazard-chip rounded-full border px-3 py-1 text-xs font-semibold" key={hazard.id}>
               {hazard.name}
             </span>
           ))}
@@ -117,7 +124,7 @@ export default async function InspectionDetailPage({
           <p className="mt-1 text-xs text-[var(--muted)]">Esta lista registra la revisión inicial. La fotografía será evaluada por IA y la decisión final corresponde a SST.</p>
         </div>
         {inspection.items.map((item) => (
-          <form action={updateInspectionItemAction} className="rounded-2xl border border-[var(--line)] bg-white p-4 shadow-sm sm:p-5" key={item.id}>
+          <form action={updateInspectionItemAction} className="surface-card rounded-2xl p-4 sm:p-5" key={item.id}>
             <input name="inspectionId" type="hidden" value={inspection.id} />
             <input name="itemId" type="hidden" value={item.id} />
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
@@ -154,7 +161,7 @@ export default async function InspectionDetailPage({
         ))}
       </section>
 
-      <section className="mt-6 rounded-2xl border border-[var(--line)] bg-white p-4 shadow-sm sm:p-6">
+      <section className="surface-card mt-6 rounded-2xl p-4 sm:p-6">
         <h2 className="font-semibold">Evidencias fotográficas</h2>
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           {editable ? <EvidenceUploader inspectionId={inspection.id} /> : <p className="text-sm text-[var(--muted)]">La carga está cerrada para este estado.</p>}
@@ -228,7 +235,7 @@ export default async function InspectionDetailPage({
       ) : null}
 
       {canReview && inspection.status === "PENDIENTE_REVISION" ? (
-        <section className="mt-6 rounded-2xl border border-[var(--line)] bg-white p-4 shadow-sm sm:p-6">
+        <section className="surface-card mt-6 rounded-2xl p-4 sm:p-6">
           <h2 className="font-semibold">Decisión y firma del responsable SST</h2>
           <div className={`mt-3 rounded-xl px-4 py-3 text-sm ${approvalReady ? "bg-emerald-50 text-emerald-900" : "bg-amber-50 text-amber-900"}`}>
             {approvalReady
@@ -276,7 +283,7 @@ export default async function InspectionDetailPage({
       ) : null}
 
       {inspection.approvals.length ? (
-        <section className="mt-6 rounded-2xl border border-[var(--line)] bg-white p-4 shadow-sm sm:p-6">
+        <section className="surface-card mt-6 rounded-2xl p-4 sm:p-6">
           <h2 className="font-semibold">Firmas y aprobaciones</h2>
           <div className="mt-4 space-y-3">
             {inspection.approvals.map((approval) => (
@@ -295,7 +302,7 @@ export default async function InspectionDetailPage({
         </section>
       ) : null}
 
-      <section className="mt-6 rounded-2xl border border-[var(--line)] bg-white p-4 shadow-sm sm:p-6">
+      <section className="surface-card mt-6 rounded-2xl p-4 sm:p-6">
         <h2 className="font-semibold">Historial de cambios</h2>
         <ol className="mt-4 space-y-4">
           {inspection.history.map((entry) => (

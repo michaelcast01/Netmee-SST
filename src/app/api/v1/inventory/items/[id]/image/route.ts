@@ -3,7 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { getCurrentUser } from "@/lib/auth/dal";
 import { hasPermission } from "@/lib/auth/permissions";
 import { getPrisma } from "@/lib/db/prisma";
-import { createPrivateDownloadUrl, deletePrivateObject, getInMemoryPrivateObject, putPrivateObject } from "@/lib/storage/s3";
+import { createPrivateDownloadUrl, deletePrivateObject, getDirectPrivateObject, putPrivateObject } from "@/lib/storage/s3";
 import { detectSupportedImage, MAX_EVIDENCE_BYTES } from "@/modules/evidence/file-validation";
 
 export const dynamic = "force-dynamic";
@@ -20,10 +20,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     select: { imageStoragePath: true, imageMimeType: true },
   });
   if (!item?.imageStoragePath) return Response.json({ error: "El elemento no tiene fotografía" }, { status: 404 });
-  const inMemoryObject = getInMemoryPrivateObject(item.imageStoragePath);
-  if (inMemoryObject) {
-    return new Response(Buffer.from(inMemoryObject.body), {
-      headers: { "content-type": item.imageMimeType ?? inMemoryObject.contentType, "cache-control": "private, no-store" },
+  const directObject = await getDirectPrivateObject(item.imageStoragePath);
+  if (directObject) {
+    return new Response(Buffer.from(directObject.body), {
+      headers: { "content-type": item.imageMimeType ?? directObject.contentType, "cache-control": "private, no-store" },
     });
   }
   return Response.redirect(await createPrivateDownloadUrl(item.imageStoragePath), 307);

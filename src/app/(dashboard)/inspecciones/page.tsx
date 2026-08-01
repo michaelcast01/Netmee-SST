@@ -63,7 +63,7 @@ export default async function InspectionsPage({ searchParams }: { searchParams: 
 
       <div className="mt-5 space-y-3 md:hidden">
         {inspections.map((inspection) => (
-          <article className="rounded-2xl border border-[var(--line)] bg-white p-4 shadow-sm" key={inspection.id}>
+          <article className="surface-card rounded-2xl p-4" key={inspection.id}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <Link className="font-mono text-xs font-semibold text-[var(--brand)]" href={`/inspecciones/${inspection.id}`}>
@@ -77,6 +77,12 @@ export default async function InspectionsPage({ searchParams }: { searchParams: 
             <p className="mt-3 text-xs text-[var(--muted)]">
               {inspection._count.items} elementos · {inspection.createdAt.toLocaleDateString("es-CO")}
             </p>
+            <Link
+              className="mt-4 block rounded-lg border border-[var(--line)] bg-[var(--brand-soft)] px-3 py-2 text-center text-xs font-semibold text-[var(--brand-strong)]"
+              href={`/inspecciones/${inspection.id}`}
+            >
+              {inspection.workerId === user.id && inspection.status === "BORRADOR" ? "Editar borrador" : "Ver detalle"}
+            </Link>
           </article>
         ))}
         {!inspections.length ? (
@@ -94,6 +100,7 @@ export default async function InspectionsPage({ searchParams }: { searchParams: 
                 <th className="px-5 py-4">Trabajador</th>
                 <th className="px-5 py-4">Estado</th>
                 <th className="px-5 py-4">Fecha</th>
+                <th className="px-5 py-4 text-right">Acción</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--line)]">
@@ -113,11 +120,19 @@ export default async function InspectionsPage({ searchParams }: { searchParams: 
                     <StatusBadge status={inspection.status} />
                   </td>
                   <td className="px-5 py-4 text-xs text-[var(--muted)]">{inspection.createdAt.toLocaleDateString("es-CO")}</td>
+                  <td className="px-5 py-4 text-right">
+                    <Link
+                      className="inline-flex rounded-lg border border-[var(--line)] bg-[var(--brand-soft)] px-3 py-2 text-xs font-semibold text-[var(--brand-strong)] transition-colors hover:border-[var(--brand)]"
+                      href={`/inspecciones/${inspection.id}`}
+                    >
+                      {inspection.workerId === user.id && inspection.status === "BORRADOR" ? "Editar borrador" : "Ver detalle"}
+                    </Link>
+                  </td>
                 </tr>
               ))}
               {!inspections.length ? (
                 <tr>
-                  <td className="px-5 py-10 text-center text-[var(--muted)]" colSpan={5}>
+                  <td className="px-5 py-10 text-center text-[var(--muted)]" colSpan={6}>
                     No hay resultados.
                   </td>
                 </tr>
@@ -127,7 +142,7 @@ export default async function InspectionsPage({ searchParams }: { searchParams: 
         </div>
       </div>
 
-      <div className="mt-3 overflow-hidden rounded-2xl border border-[var(--line)] bg-white md:mt-0 md:border-0 md:bg-transparent">
+      <div className="surface-card mt-3 overflow-hidden rounded-2xl md:mt-0 md:border-0 md:bg-transparent md:shadow-none">
         <Pagination page={page} pageSize={DEFAULT_PAGE_SIZE} params={{ q, status }} pathname="/inspecciones" total={total} />
       </div>
     </main>

@@ -1,7 +1,7 @@
 import { getCurrentUser } from "@/lib/auth/dal";
 import { hasPermission } from "@/lib/auth/permissions";
 import { getPrisma } from "@/lib/db/prisma";
-import { createEvidenceDownloadUrl, getInMemoryPrivateObject } from "@/lib/storage/s3";
+import { createEvidenceDownloadUrl, getDirectPrivateObject } from "@/lib/storage/s3";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +13,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   if (!evidence) return Response.json({ error: "Evidencia no encontrada" }, { status: 404 });
   if (evidence.retentionDeleteStartedAt) return Response.json({ error: "La evidencia está en proceso de eliminación por retención" }, { status: 410 });
   if (evidence.inspection.workerId !== user.id && !hasPermission(user.permissions, "inspection.review")) return Response.json({ error: "Sin permiso" }, { status: 403 });
-  const inMemoryObject = getInMemoryPrivateObject(evidence.storagePath);
-  if (inMemoryObject) {
-    return new Response(Buffer.from(inMemoryObject.body), {
+  const directObject = await getDirectPrivateObject(evidence.storagePath);
+  if (directObject) {
+    return new Response(Buffer.from(directObject.body), {
       headers: { "content-type": evidence.mimeType, "cache-control": "private, no-store" },
     });
   }
