@@ -1,9 +1,14 @@
 import type { InspectionStatus, Prisma } from "@/generated/prisma/client";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ClipboardCheck } from "lucide-react";
 
 import { Pagination } from "@/components/data/pagination";
 import { StatusBadge } from "@/components/inspections/status-badge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
 import { requireUser } from "@/lib/auth/dal";
 import { hasPermission } from "@/lib/auth/permissions";
 import { getPrisma } from "@/lib/db/prisma";
@@ -33,22 +38,17 @@ export default async function InspectionsPage({ searchParams }: { searchParams: 
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
-          <p className="eyebrow text-xs font-semibold text-[var(--brand)]">CONTROL PREVENTIVO</p>
-          <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">Inspecciones</h1>
-          <p className="mt-2 text-sm text-[var(--muted)]">Verificaciones previas y trazabilidad por actividad.</p>
-        </div>
-        {hasPermission(user.permissions, "inspection.create") ? (
-          <Link className="brand-cta rounded-xl px-5 py-3 text-center text-sm font-semibold text-white" href="/inspecciones/nueva">
-            Nueva inspección
-          </Link>
-        ) : null}
-      </div>
+      <PageHeader
+        action={hasPermission(user.permissions, "inspection.create") ? <Link className={buttonVariants({ className: "brand-cta h-10 px-5 text-white", size: "lg" })} href="/inspecciones/nueva">Nueva inspección</Link> : null}
+        description="Verificaciones previas y trazabilidad por actividad."
+        eyebrow="CONTROL PREVENTIVO"
+        icon={ClipboardCheck}
+        title="Inspecciones"
+      />
 
-      <form className="surface-card mt-6 grid gap-3 rounded-2xl p-4 sm:grid-cols-2 lg:grid-cols-[1fr_220px_auto]" method="get">
-        <input className="auth-input mt-0 sm:col-span-2 lg:col-span-1" defaultValue={q} name="q" placeholder="Código, trabajador o actividad" type="search" />
-        <select className="auth-input mt-0" defaultValue={status ?? ""} name="status">
+      <form className="surface-card mt-6 grid gap-3 rounded-2xl p-4 ring-1 ring-foreground/10 sm:grid-cols-2 lg:grid-cols-[1fr_220px_auto]" method="get">
+        <Input className="h-11 sm:col-span-2 lg:col-span-1" defaultValue={q} name="q" placeholder="Código, trabajador o actividad" type="search" />
+        <select className="h-11 rounded-lg border border-input bg-background px-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50" defaultValue={status ?? ""} name="status">
           <option value="">Todos los estados</option>
           {statuses.map((value) => (
             <option key={value} value={value}>
@@ -56,14 +56,14 @@ export default async function InspectionsPage({ searchParams }: { searchParams: 
             </option>
           ))}
         </select>
-        <button className="brand-cta rounded-xl px-5 py-3 text-sm font-semibold text-white sm:col-span-2 lg:col-span-1" type="submit">
+        <Button className="brand-cta h-11 px-5 text-white sm:col-span-2 lg:col-span-1" size="lg" type="submit">
           Buscar
-        </button>
+        </Button>
       </form>
 
       <div className="mt-5 space-y-3 md:hidden">
         {inspections.map((inspection) => (
-          <article className="surface-card rounded-2xl p-4" key={inspection.id}>
+          <Card className="surface-card rounded-2xl p-4" key={inspection.id}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <Link className="font-mono text-xs font-semibold text-[var(--brand)]" href={`/inspecciones/${inspection.id}`}>
@@ -78,12 +78,12 @@ export default async function InspectionsPage({ searchParams }: { searchParams: 
               {inspection._count.items} elementos · {inspection.createdAt.toLocaleDateString("es-CO")}
             </p>
             <Link
-              className="mt-4 block rounded-lg border border-[var(--line)] bg-[var(--brand-soft)] px-3 py-2 text-center text-xs font-semibold text-[var(--brand-strong)]"
+              className={buttonVariants({ className: "mt-4 h-9 w-full border-[var(--line)] bg-[var(--brand-soft)] text-[var(--brand-strong)] hover:border-[var(--brand)]", size: "sm", variant: "outline" })}
               href={`/inspecciones/${inspection.id}`}
             >
               {inspection.workerId === user.id && inspection.status === "BORRADOR" ? "Editar borrador" : "Ver detalle"}
             </Link>
-          </article>
+          </Card>
         ))}
         {!inspections.length ? (
           <div className="rounded-2xl border border-dashed border-[var(--line)] p-10 text-center text-sm text-[var(--muted)]">No hay resultados.</div>
@@ -122,7 +122,7 @@ export default async function InspectionsPage({ searchParams }: { searchParams: 
                   <td className="px-5 py-4 text-xs text-[var(--muted)]">{inspection.createdAt.toLocaleDateString("es-CO")}</td>
                   <td className="px-5 py-4 text-right">
                     <Link
-                      className="inline-flex rounded-lg border border-[var(--line)] bg-[var(--brand-soft)] px-3 py-2 text-xs font-semibold text-[var(--brand-strong)] transition-colors hover:border-[var(--brand)]"
+                      className={buttonVariants({ className: "h-8 border-[var(--line)] bg-[var(--brand-soft)] text-[var(--brand-strong)] hover:border-[var(--brand)]", size: "sm", variant: "outline" })}
                       href={`/inspecciones/${inspection.id}`}
                     >
                       {inspection.workerId === user.id && inspection.status === "BORRADOR" ? "Editar borrador" : "Ver detalle"}

@@ -1,5 +1,6 @@
 import type { InspectionStatus } from "@/modules/inspections";
 import { inspectionStatusLabels as labels } from "@/modules/inspections";
+import { Badge } from "@/components/ui/badge";
 
 const tones: Record<InspectionStatus, string> = {
   BORRADOR: "bg-slate-100 text-slate-700",
@@ -12,5 +13,5 @@ const tones: Record<InspectionStatus, string> = {
 };
 
 export function StatusBadge({ status }: { status: InspectionStatus }) {
-  return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${tones[status]}`}>{labels[status]}</span>;
+  return <Badge className={`h-6 px-2.5 font-semibold ${tones[status]}`} variant="outline">{labels[status]}</Badge>;
 }

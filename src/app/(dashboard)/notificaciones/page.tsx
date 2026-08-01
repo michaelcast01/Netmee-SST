@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BellRing } from "lucide-react";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
 import { requireUser } from "@/lib/auth/dal";
 import { getPrisma } from "@/lib/db/prisma";
 import { syncNotificationsForUser } from "@/modules/notifications/service";
@@ -21,33 +25,24 @@ export default async function NotificationsPage() {
   });
   return (
     <main className="mx-auto max-w-4xl px-6 py-8">
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
-          <p className="text-sm font-semibold text-[var(--brand)]">
-            CENTRO DE ALERTAS
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold">Notificaciones</h1>
-          <p className="mt-2 text-sm text-[var(--muted)]">
-            Vencimientos, revisiones y hallazgos que requieren atención.
-          </p>
-        </div>
-        <form action={markAllNotificationsRead}>
-          <button className="w-full rounded-lg border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold sm:w-auto">
-            Marcar todas como leídas
-          </button>
-        </form>
-      </div>
+      <PageHeader
+        action={<form action={markAllNotificationsRead}><Button className="h-10 border-[var(--line)] bg-[var(--card)]" size="lg" type="submit" variant="outline">Marcar todas como leídas</Button></form>}
+        description="Vencimientos, revisiones y hallazgos que requieren atención."
+        eyebrow="CENTRO DE ALERTAS"
+        icon={BellRing}
+        title="Notificaciones"
+      />
       <section className="mt-7 space-y-3">
         {notifications.map((n) => (
           <article
-            className={`rounded-2xl border p-5 ${n.readAt ? "border-[var(--line)] bg-white" : "border-violet-200 bg-violet-50"}`}
+            className={`surface-card rounded-2xl p-5 ${n.readAt ? "" : "border-violet-200 bg-violet-50/70"}`}
             key={n.id}
           >
             <div className="flex flex-col justify-between gap-3 sm:flex-row">
               <div>
-                <span className="text-xs font-semibold uppercase text-[var(--brand)]">
+                <Badge className="bg-[var(--brand-soft)] text-[var(--brand-strong)]" variant="secondary">
                   {labels[n.type]}
-                </span>
+                </Badge>
                 <h2 className="mt-1 font-semibold">{n.title}</h2>
                 <p className="mt-1 text-sm text-[var(--muted)]">{n.message}</p>
                 <p className="mt-2 text-xs text-[var(--muted)]">
@@ -56,7 +51,7 @@ export default async function NotificationsPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Link
-                  className="rounded-lg bg-[var(--navy)] px-3 py-2 text-xs font-semibold text-white"
+                  className={buttonVariants({ className: "h-8 px-3 text-xs", size: "sm" })}
                   href={n.href}
                 >
                   Ver
@@ -64,9 +59,9 @@ export default async function NotificationsPage() {
                 {!n.readAt ? (
                   <form action={markNotificationRead}>
                     <input name="id" type="hidden" value={n.id} />
-                    <button className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold">
+                    <Button className="h-8 border-[var(--line)] px-3 text-xs" size="sm" type="submit" variant="outline">
                       Leída
-                    </button>
+                    </Button>
                   </form>
                 ) : null}
               </div>
@@ -74,7 +69,7 @@ export default async function NotificationsPage() {
           </article>
         ))}
         {!notifications.length ? (
-          <div className="rounded-2xl border border-dashed border-[var(--line)] p-10 text-center text-sm text-[var(--muted)]">
+          <div className="surface-card rounded-2xl border-dashed p-10 text-center text-sm text-[var(--muted)]">
             No tienes alertas activas.
           </div>
         ) : null}

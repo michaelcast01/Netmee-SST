@@ -3,6 +3,8 @@
 import { SunMoon } from "lucide-react";
 import { useEffect } from "react";
 
+import { Button } from "@/components/ui/button";
+
 export function ThemeToggle() {
   useEffect(() => {
     const stored = localStorage.getItem("netmee-theme");
@@ -16,5 +18,17 @@ export function ThemeToggle() {
     localStorage.setItem("netmee-theme", next ? "dark" : "light");
   }
 
-  return <button aria-label="Cambiar tema de color" className="glass-control grid size-9 place-items-center rounded-xl" onClick={toggleTheme} title="Cambiar tema" type="button"><SunMoon aria-hidden="true" size={17} /></button>;
+  return (
+    <Button
+      aria-label="Cambiar tema de color"
+      className="glass-control text-violet-100 hover:bg-white/12 hover:text-white"
+      onClick={toggleTheme}
+      size="icon-lg"
+      title="Cambiar tema"
+      type="button"
+      variant="ghost"
+    >
+      <SunMoon aria-hidden="true" />
+    </Button>
+  );
 }

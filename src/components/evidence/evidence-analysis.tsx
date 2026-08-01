@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+
 type Assessment = {
   name: string;
   status: "DETECTED" | "MISSING" | "UNCERTAIN";
@@ -146,22 +150,22 @@ export function EvidenceAnalysis({ evidenceId, initialAnalysis, canValidate = fa
   }
 
   return (
-    <div className="mt-3 rounded-lg bg-slate-50 p-3">
+    <div className="evidence-analysis mt-4 rounded-xl border border-border bg-muted/50 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-semibold">Verificación de EPP con IA</p>
-        {analysis ? <span className="rounded-full bg-white px-2 py-1 text-[10px] font-semibold">{statusLabel(analysis.status)}</span> : null}
+        <p className="text-sm font-semibold text-[var(--text)]">Verificación de EPP con IA</p>
+        {analysis ? <Badge className="border-border bg-background/70 px-2 py-1 text-[10px] text-[var(--muted)]" variant="outline">{statusLabel(analysis.status)}</Badge> : null}
       </div>
 
       {result ? (
         <div className="mt-3 space-y-3">
-          <div className={`rounded-lg px-3 py-2 text-xs font-semibold ${result.compliant ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900"}`}>
+          <div className={`evidence-result rounded-lg px-3 py-2 text-xs font-semibold ${result.compliant ? "evidence-result-success" : "evidence-result-warning"}`}>
             {result.compliant ? "La imagen muestra todos los EPP obligatorios." : "La imagen no permite confirmar el cumplimiento completo."}
             <span className="ml-1 font-normal">Confianza: {Math.round(result.confidence * 100)}%</span>
           </div>
           <p className="text-xs text-[var(--muted)]">{result.summary}</p>
           <ul className="space-y-2">
             {result.assessments.map((item) => (
-              <li className="rounded-lg border border-[var(--line)] bg-white px-3 py-2" key={item.name}>
+              <li className="rounded-lg border border-border bg-card px-3 py-2" key={item.name}>
                 <div className="flex justify-between gap-3 text-xs">
                   <strong>{item.name}</strong>
                   <span>{item.status === "DETECTED" ? "Visible" : item.status === "MISSING" ? "No visible" : "No concluyente"} · {Math.round(item.confidence * 100)}%</span>
@@ -176,28 +180,31 @@ export function EvidenceAnalysis({ evidenceId, initialAnalysis, canValidate = fa
       ) : null}
 
       {canValidate && analysis?.needsReview && result ? (
-        <div className="mt-3 rounded-lg border border-violet-200 bg-violet-50 p-3">
-          <label className="text-xs font-semibold" htmlFor={`validation-notes-${analysis.id}`}>Validación del responsable SST</label>
-          <textarea
-            className="mt-2 min-h-20 w-full rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs"
+        <div className="evidence-validation mt-4 rounded-xl border border-[var(--brand)]/25 bg-[var(--brand-soft)]/45 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <label className="text-sm font-semibold text-[var(--text)]" htmlFor={`validation-notes-${analysis.id}`}>Validación del responsable SST</label>
+            <Badge className="border-[var(--brand)]/25 bg-background/55 text-[var(--muted)]" variant="outline">Revisión humana</Badge>
+          </div>
+          <Textarea
+            className="mt-3 min-h-24 resize-y bg-background/80 text-sm"
             id={`validation-notes-${analysis.id}`}
             maxLength={500}
             onChange={(event) => setValidationNotes(event.target.value)}
             placeholder="Observación de la revisión humana"
             value={validationNotes}
           />
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50" disabled={validating} onClick={() => validateAnalysis("CUMPLE")} type="button">Determinar que cumple</button>
-            <button className="rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50" disabled={validating} onClick={() => validateAnalysis("NO_CUMPLE")} type="button">Determinar que no cumple</button>
-            <button className="rounded-lg bg-slate-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50" disabled={validating} onClick={() => validateAnalysis("NO_CONCLUYENTE")} type="button">Solicitar nueva foto</button>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button className="bg-emerald-600 text-xs text-white hover:bg-emerald-700" disabled={validating} onClick={() => validateAnalysis("CUMPLE")} size="sm" type="button">Determinar que cumple</Button>
+            <Button className="bg-red-600 text-xs text-white hover:bg-red-700" disabled={validating} onClick={() => validateAnalysis("NO_CUMPLE")} size="sm" type="button">Determinar que no cumple</Button>
+            <Button className="bg-slate-700 text-xs text-white hover:bg-slate-800" disabled={validating} onClick={() => validateAnalysis("NO_CONCLUYENTE")} size="sm" type="button">Solicitar nueva foto</Button>
           </div>
         </div>
       ) : null}
 
       {!analysis || ["ERROR", "DETECTED", "NOT_DETECTED", "LOW_CONFIDENCE", "CONFIRMED", "DISCARDED"].includes(analysis.status) ? (
-        <button className="mt-3 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold disabled:opacity-50" disabled={requesting} onClick={requestAnalysis} type="button">
+        <Button className="mt-4" disabled={requesting} onClick={requestAnalysis} size="sm" type="button" variant="outline">
           {requesting ? "Iniciando…" : analysis ? "Analizar de nuevo" : "Analizar con IA"}
-        </button>
+        </Button>
       ) : null}
       {message ? <p className="mt-2 text-xs" role="status">{message}</p> : null}
       <p className="mt-3 text-[10px] leading-4 text-[var(--muted)]">Resultado orientativo. Una persona responsable de SST debe validar cualquier hallazgo antes de tomar decisiones.</p>

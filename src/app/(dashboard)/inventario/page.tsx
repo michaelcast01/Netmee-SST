@@ -6,8 +6,10 @@ import { ImageOff, PackageSearch, ShieldCheck } from "lucide-react";
 
 import { Pagination } from "@/components/data/pagination";
 import { PpeImageUploader } from "@/components/inventory/ppe-image-uploader";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FlashMessage } from "@/components/ui/flash-message";
+import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { requirePermission } from "@/lib/auth/dal";
 import { hasPermission } from "@/lib/auth/permissions";
@@ -92,7 +94,7 @@ export default async function InventoryPage({
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <PageHeader
-        action={canUpdate ? <Link className="brand-cta rounded-xl px-5 py-3 text-sm font-semibold text-white" href="/inventario/nuevo">Registrar elemento</Link> : null}
+        action={canUpdate ? <Link className={buttonVariants({ className: "brand-cta h-10 px-5 text-white", size: "lg" })} href="/inventario/nuevo">Registrar elemento</Link> : null}
         description="Fotografías, asignaciones, devoluciones, vencimientos y movimientos de cada EPP."
         eyebrow="TRAZABILIDAD DE EPP"
         icon={PackageSearch}
@@ -114,19 +116,19 @@ export default async function InventoryPage({
         ))}
       </section>
 
-      <form className="surface-card mt-5 grid gap-3 rounded-2xl p-4 lg:grid-cols-[1fr_190px_190px_auto]" method="get">
-        <input aria-label="Buscar por QR, serie o tipo de EPP" className="auth-input mt-0" defaultValue={q} name="q" placeholder="QR, serie o tipo de EPP" type="search" />
-        <select aria-label="Filtrar por estado" className="auth-input mt-0" defaultValue={status ?? ""} name="status">
+      <form className="surface-card mt-5 grid gap-3 rounded-2xl p-4 ring-1 ring-foreground/10 lg:grid-cols-[1fr_190px_190px_auto]" method="get">
+        <Input aria-label="Buscar por QR, serie o tipo de EPP" className="h-11" defaultValue={q} name="q" placeholder="QR, serie o tipo de EPP" type="search" />
+        <select aria-label="Filtrar por estado" className="h-11 rounded-lg border border-input bg-background px-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50" defaultValue={status ?? ""} name="status">
           <option value="">Todos los estados</option>
           {ppeStatuses.map((itemStatus) => <option key={itemStatus} value={itemStatus}>{ppeStatusLabels[itemStatus]}</option>)}
         </select>
-        <select aria-label="Filtrar por vencimiento" className="auth-input mt-0" defaultValue={expiry ?? ""} name="expiry">
+        <select aria-label="Filtrar por vencimiento" className="h-11 rounded-lg border border-input bg-background px-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50" defaultValue={expiry ?? ""} name="expiry">
           <option value="">Cualquier vencimiento</option>
           <option value="expired">Vencidos</option>
           <option value="30">Próximos 30 días</option>
           <option value="90">Próximos 90 días</option>
         </select>
-        <button className="brand-cta rounded-xl px-5 py-3 text-sm font-semibold text-white">Buscar</button>
+        <Button className="brand-cta h-11 px-5 text-white" size="lg" type="submit">Buscar</Button>
       </form>
 
       <div className="mt-5 space-y-4">
@@ -173,13 +175,13 @@ export default async function InventoryPage({
                           {workers.map((worker) => <option key={worker.id} value={worker.id}>{worker.name}</option>)}
                         </select>
                         <input aria-label="Observación de entrega" className="rounded-lg border border-[var(--line)] px-3 py-2 text-xs" name="notes" placeholder="Observación" />
-                        <button className="brand-cta rounded-lg px-3 py-2 text-xs font-semibold text-white">Entregar</button>
+                        <Button className="brand-cta h-8 px-3 text-xs text-white" size="sm" type="submit">Entregar</Button>
                       </form>
                     ) : null}
                     {canUpdate && assignment ? (
                       <form action={returnPpeItemAction}>
                         <input name="assignmentId" type="hidden" value={assignment.id} />
-                        <button className="rounded-lg border border-[var(--line)] px-4 py-2 text-xs font-semibold">Registrar devolución</button>
+                        <Button className="h-8 border-[var(--line)] px-4 text-xs" size="sm" type="submit" variant="outline">Registrar devolución</Button>
                       </form>
                     ) : null}
                   </div>
