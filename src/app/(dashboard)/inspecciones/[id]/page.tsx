@@ -215,9 +215,9 @@ export default async function InspectionDetailPage({
       </section>
 
       {canSubmit ? (
-        <form action={submitInspectionForReviewAction} className="mt-6 rounded-2xl border border-violet-200 bg-violet-50 p-4 sm:p-5">
+        <form action={submitInspectionForReviewAction} className="mt-6 rounded-2xl bg-card p-4 text-card-foreground shadow-sm ring-1 ring-border sm:p-5">
           <input name="inspectionId" type="hidden" value={inspection.id} />
-          <p className="text-sm text-violet-900">
+          <p className="text-sm text-foreground">
             {!hasEvidence
               ? "Carga una fotografía de cuerpo completo antes de enviar a revisión."
               : requiredPending
